@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: presentacion.EstiloYAparienciaTest
+-------------------------------------------------------------------------------
+Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.747 s -- in presentacion.EstiloYAparienciaTest

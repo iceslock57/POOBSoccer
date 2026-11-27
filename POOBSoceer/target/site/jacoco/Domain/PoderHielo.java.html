@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PoderHielo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">PoderHielo.java</span></div><h1>PoderHielo.java</h1><pre class="source lang-java linenums">package Domain;
+
+import java.util.Collections;
+import java.util.List;
+
+/** Rusia: un bloque de hielo que vuela en arco, cae al suelo y sigue patinando; si golpea, congela al rival. */
+<span class="fc" id="L7">public class PoderHielo implements Poder {</span>
+
+    private static final double DANIO_BASE = 35;
+    private static final double SEGUNDOS_CONGELADO = 2.5;
+    private static final double IMPULSO_HACIA_ARRIBA = 9;
+    private static final double CAIDA = .5;
+    private static final double VELOCIDAD_PATINANDO = 17;
+
+    @Override
+    public double velocidadDisparo() {
+<span class="fc" id="L17">        return 11;</span>
+    }
+
+    @Override
+    public double duracionEfecto() {
+<span class="fc" id="L22">        return SEGUNDOS_CONGELADO;</span>
+    }
+
+    /** El balón sale hacia arriba para pasar por encima de lo que tenga cerca. */
+    @Override
+    public List&lt;Balon&gt; lanzar(Balon balon, int direccion, int propietario) {
+<span class="fc" id="L28">        balon.aplicarDisparoEspecial(direccion * velocidadDisparo(), -IMPULSO_HACIA_ARRIBA, propietario);</span>
+<span class="fc" id="L29">        return Collections.emptyList();</span>
+    }
+
+    /** En el aire va cayendo; al tocar el suelo deja de rebotar y se desliza más rápido. */
+    @Override
+    public void avanzarDisparo(Balon balon, int suelo) {
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        boolean enElSuelo = balon.getPosY() + balon.getRadio() &gt;= suelo;</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        if (enElSuelo) {</span>
+<span class="fc" id="L37">            balon.cambiarVelocidad(Math.signum(balon.getVelX()) * VELOCIDAD_PATINANDO, 0);</span>
+        } else {
+<span class="fc" id="L39">            balon.cambiarVelocidad(balon.getVelX(), balon.getVelY() + CAIDA);</span>
+        }
+<span class="fc" id="L41">    }</span>
+
+    @Override
+    public void aplicarEfecto(Personaje objetivo) {
+<span class="fc" id="L45">        aplicarEfecto(objetivo, 1.0);</span>
+<span class="fc" id="L46">    }</span>
+
+    @Override
+    public void aplicarEfecto(Personaje objetivo, double multiplicadorKick) {
+<span class="fc" id="L50">        objetivo.recibirDanio(DANIO_BASE * multiplicadorKick);</span>
+<span class="fc" id="L51">        objetivo.congelar(SEGUNDOS_CONGELADO);</span>
+<span class="fc" id="L52">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

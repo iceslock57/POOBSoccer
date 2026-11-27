@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PartidoPorGoles.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">PartidoPorGoles.java</span></div><h1>PartidoPorGoles.java</h1><pre class="source lang-java linenums">package Domain;
+
+/**
+ * Representa un partido que se define por una cantidad de goles.
+ * No tiene límite de tiempo y termina cuando un jugador alcanza la meta.
+ */
+public class PartidoPorGoles extends Partido {
+
+    private int golesObjetivo;
+
+    /**
+     * Constructor para el partido por goles.
+     *
+     * @param jugador1 El primer jugador.
+     * @param jugador2 El segundo jugador.
+     * @param golesObjetivo La cantidad de goles para ganar (por ejemplo: 3, 5 o 7).
+     */
+    public PartidoPorGoles(Jugador jugador1, Jugador jugador2, int golesObjetivo) {
+<span class="fc" id="L19">        super(jugador1, jugador2);</span>
+
+        // El objetivo de goles para ganar el partido.
+<span class="fc bfc" id="L22" title="All 2 branches covered.">        if (golesObjetivo &lt; 1) throw new IllegalArgumentException(&quot;La meta de goles debe ser positiva&quot;);</span>
+
+<span class="fc" id="L24">        this.golesObjetivo = golesObjetivo;</span>
+<span class="fc" id="L25">    }</span>
+
+    public PartidoPorGoles(Jugador a, Jugador b, int goles, int ancho, int alto) {
+<span class="fc" id="L28">        super(a, b, ancho, alto);</span>
+
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        if (goles &lt; 1) throw new IllegalArgumentException(&quot;La meta de goles debe ser positiva&quot;);</span>
+
+<span class="fc" id="L32">        golesObjetivo = goles;</span>
+<span class="fc" id="L33">    }</span>
+
+    @Override
+    public boolean esFinDePartido() {
+        // Gana el primero que llegue a la cantidad de goles objetivo, sin límite de tiempo.
+        // Retorna true automáticamente si cualquiera de los dos alcanza la meta.
+<span class="fc bfc" id="L39" title="All 4 branches covered.">        return marcador[0] &gt;= golesObjetivo || marcador[1] &gt;= golesObjetivo;</span>
+    }
+
+    public int getGolesObjetivo() {
+<span class="fc" id="L43">        return this.golesObjetivo;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Arco.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">Arco.java</span></div><h1>Arco.java</h1><pre class="source lang-java linenums">package Domain;
+
+/**
+ * Representa una portería y determina si el balón cruzó completamente su abertura.
+ * También conserva el equipo propietario para identificar qué lado recibió el gol.
+ */
+public class Arco {
+
+    private final int posX;
+    private final int posY;
+    private final int ancho;
+    private final int alto;
+    private final String equipoPropietario;
+    private final boolean izquierdo;
+
+<span class="fc" id="L16">    public Arco(int x, int y, int w, int h, String equipo, boolean izquierdo) {</span>
+<span class="fc" id="L17">        posX = x;</span>
+<span class="fc" id="L18">        posY = y;</span>
+<span class="fc" id="L19">        ancho = w;</span>
+<span class="fc" id="L20">        alto = h;</span>
+<span class="fc" id="L21">        equipoPropietario = equipo;</span>
+<span class="fc" id="L22">        this.izquierdo = izquierdo;</span>
+<span class="fc" id="L23">    }</span>
+
+    /** Comprueba que el balón haya atravesado la línea y permanezca dentro de la altura del arco. */
+    public boolean contieneBalon(Balon b) {
+<span class="fc" id="L27">        double y = b.getPosY();</span>
+<span class="fc" id="L28">        int r = b.getRadio();</span>
+
+<span class="fc bfc" id="L30" title="All 6 branches covered.">        return y - r &gt; posY + 5</span>
+                &amp;&amp; y + r &lt; posY + alto - 5
+                &amp;&amp; (izquierdo
+<span class="fc bfc" id="L33" title="All 2 branches covered.">                ? b.getPosX() + r &lt;= posX</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">                : b.getPosX() - r &gt;= posX + ancho);</span>
+    }
+
+    public int getPosX() {
+<span class="fc" id="L38">        return posX;</span>
+    }
+
+    public int getPosY() {
+<span class="fc" id="L42">        return posY;</span>
+    }
+
+    public int getAncho() {
+<span class="fc" id="L46">        return ancho;</span>
+    }
+
+    public int getAlto() {
+<span class="fc" id="L50">        return alto;</span>
+    }
+
+    public String getEquipoPropietario() {
+<span class="fc" id="L54">        return equipoPropietario;</span>
+    }
+
+    public boolean isEsArcoIzquierdo() {
+<span class="fc" id="L58">        return izquierdo;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

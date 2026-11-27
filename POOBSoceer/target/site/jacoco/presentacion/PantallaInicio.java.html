@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PantallaInicio.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">PantallaInicio.java</span></div><h1>PantallaInicio.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+
+/**
+ * Pantalla de inicio con los botones PLAY y SALIR.
+ * Si existe la portada (recursos/portada_poobsoccer.png) se usa de fondo y los botones van sobre el césped;
+ * si no, se muestra el fondo normal con el título en texto.
+ * No sabe a qué pantalla se va después: eso lo decide quien la crea, por medio de las acciones que recibe.
+ */
+class PantallaInicio extends JPanel {
+
+    /**
+     * @param alJugar acción al presionar PLAY
+     * @param alSalir acción al presionar SALIR
+     */
+    PantallaInicio(Runnable alJugar, Runnable alSalir) {
+<span class="fc" id="L21">        super(new BorderLayout());</span>
+
+<span class="fc" id="L23">        JButton play = EstiloGUI.boton(&quot;PLAY&quot;);</span>
+<span class="fc" id="L24">        play.addActionListener(e -&gt; alJugar.run());</span>
+<span class="fc" id="L25">        JButton salir = EstiloGUI.boton(&quot;SALIR&quot;);</span>
+<span class="fc" id="L26">        salir.addActionListener(e -&gt; alSalir.run());</span>
+
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">        if (EstiloGUI.hayPortada()) {</span>
+<span class="fc" id="L29">            add(conPortada(play, salir), BorderLayout.CENTER);</span>
+        } else {
+<span class="nc" id="L31">            add(sinPortada(play, salir), BorderLayout.CENTER);</span>
+        }
+<span class="fc" id="L33">    }</span>
+
+    /** La portada ya trae el título; los botones van uno al lado del otro sobre el césped. */
+    private JPanel conPortada(JButton play, JButton salir) {
+<span class="fc" id="L37">        JPanel p = EstiloGUI.portada();</span>
+<span class="fc" id="L38">        JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 0));</span>
+<span class="fc" id="L39">        botones.setOpaque(false);</span>
+<span class="fc" id="L40">        botones.add(play);</span>
+<span class="fc" id="L41">        botones.add(salir);</span>
+<span class="fc" id="L42">        p.add(botones, BorderLayout.SOUTH);</span>
+
+        // La franja de césped cambia de alto con la ventana; se recalcula el margen inferior
+        // para que los botones queden centrados sobre ella.
+<span class="fc" id="L46">        p.addComponentListener(new ComponentAdapter() {</span>
+            @Override
+            public void componentResized(ComponentEvent e) {
+<span class="fc" id="L49">                int cesped = EstiloGUI.altoCespedPortada(p.getWidth(), p.getHeight());</span>
+<span class="fc" id="L50">                int margen = Math.max(8, (cesped - play.getPreferredSize().height) / 2);</span>
+<span class="fc" id="L51">                p.setBorder(BorderFactory.createEmptyBorder(0, 0, margen, 0));</span>
+<span class="fc" id="L52">                p.revalidate();</span>
+<span class="fc" id="L53">            }</span>
+        });
+<span class="fc" id="L55">        return p;</span>
+    }
+
+    /** Versión anterior: fondo normal con el título en texto y los botones en columna. */
+    private JPanel sinPortada(JButton play, JButton salir) {
+<span class="nc" id="L60">        JPanel p = EstiloGUI.fondo();</span>
+<span class="nc" id="L61">        JPanel box = new JPanel();</span>
+<span class="nc" id="L62">        box.setOpaque(false);</span>
+<span class="nc" id="L63">        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));</span>
+
+<span class="nc" id="L65">        JLabel logo = EstiloGUI.titulo(&quot;POOBSoccer&quot;, 42);</span>
+<span class="nc" id="L66">        logo.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="nc" id="L67">        box.add(logo);</span>
+<span class="nc" id="L68">        box.add(Box.createVerticalStrut(45));</span>
+
+<span class="nc" id="L70">        play.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="nc" id="L71">        box.add(play);</span>
+<span class="nc" id="L72">        box.add(Box.createVerticalStrut(15));</span>
+<span class="nc" id="L73">        salir.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="nc" id="L74">        box.add(salir);</span>
+
+<span class="nc" id="L76">        p.add(box);</span>
+<span class="nc" id="L77">        return p;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

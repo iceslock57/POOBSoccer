@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CatalogoPersonajes.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">CatalogoPersonajes.java</span></div><h1>CatalogoPersonajes.java</h1><pre class="source lang-java linenums">package Domain;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+
+/** Registro de personajes disponibles: pais -&gt; poder. */
+public final class CatalogoPersonajes {
+
+<span class="fc" id="L12">    private static final Map&lt;String, Supplier&lt;Poder&gt;&gt; PODERES = new LinkedHashMap&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L15">        PODERES.put(&quot;Corea del Sur&quot;, PoderAuraAzul::new);</span>
+<span class="fc" id="L16">        PODERES.put(&quot;Camerún&quot;, PoderRayo::new);</span>
+<span class="fc" id="L17">        PODERES.put(&quot;Nigeria&quot;, PoderTornado::new);</span>
+<span class="fc" id="L18">        PODERES.put(&quot;Estados Unidos&quot;, PoderIlusion::new);</span>
+        // Rusia y Japón no están en el anexo; son personajes propios con poderes propios.
+<span class="fc" id="L20">        PODERES.put(&quot;Rusia&quot;, PoderHielo::new);</span>
+<span class="fc" id="L21">        PODERES.put(&quot;Japón&quot;, PoderFuego::new);</span>
+<span class="fc" id="L22">    }</span>
+
+    private CatalogoPersonajes() {
+    }
+
+    public static List&lt;String&gt; paises() {
+<span class="fc" id="L28">        return new ArrayList&lt;&gt;(PODERES.keySet());</span>
+    }
+
+    public static boolean existe(String pais) {
+<span class="fc" id="L32">        return PODERES.containsKey(pais);</span>
+    }
+
+    public static Personaje crear(String pais) {
+<span class="fc" id="L36">        return crear(pais, null);</span>
+    }
+
+    /**
+     * Crea el personaje con las estadísticas que el usuario le ha comprado a ese país.
+     * Si todavía no hay perfil asociado, todas las estadísticas comienzan en uno.
+     */
+    public static Personaje crear(String pais, PerfilJugador perfil) {
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        return crearConEstadisticas(pais, perfil == null ? new EstadisticasPersonaje() : perfil.getEstadisticas(pais));</span>
+    }
+
+    /** Crea el personaje con unos niveles ya definidos. */
+    static Personaje crearConEstadisticas(String pais, EstadisticasPersonaje e) {
+<span class="fc" id="L49">        Supplier&lt;Poder&gt; fabrica = PODERES.get(pais);</span>
+
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (fabrica == null) {</span>
+<span class="fc" id="L52">            throw new IllegalArgumentException(&quot;País sin poder definido: &quot; + pais);</span>
+        }
+
+<span class="fc" id="L55">        return new Personaje(pais, pais,</span>
+<span class="fc" id="L56">                e.getNivel(PerfilJugador.Estadistica.SPEED),</span>
+<span class="fc" id="L57">                e.getNivel(PerfilJugador.Estadistica.JUMP),</span>
+<span class="fc" id="L58">                e.getNivel(PerfilJugador.Estadistica.KICK),</span>
+<span class="fc" id="L59">                e.getNivel(PerfilJugador.Estadistica.VIDA),</span>
+<span class="fc" id="L60">                fabrica.get());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

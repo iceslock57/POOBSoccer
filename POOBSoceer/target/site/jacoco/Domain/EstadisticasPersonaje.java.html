@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EstadisticasPersonaje.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">EstadisticasPersonaje.java</span></div><h1>EstadisticasPersonaje.java</h1><pre class="source lang-java linenums">package Domain;
+
+import java.util.EnumMap;
+import java.util.Map;
+
+/** Niveles que un jugador ha comprado para uno de sus personajes. Todos empiezan en uno y llegan hasta diez. */
+public class EstadisticasPersonaje {
+
+    public static final int NIVEL_MAXIMO = 10;
+    private static final long PRECIO_INICIAL = 500;
+
+<span class="fc" id="L12">    private final Map&lt;PerfilJugador.Estadistica, Integer&gt; niveles = new EnumMap&lt;&gt;(PerfilJugador.Estadistica.class);</span>
+
+<span class="fc" id="L14">    public EstadisticasPersonaje() {</span>
+<span class="fc bfc" id="L15" title="All 2 branches covered.">        for (PerfilJugador.Estadistica e : PerfilJugador.Estadistica.values()) niveles.put(e, 1);</span>
+<span class="fc" id="L16">    }</span>
+
+    public int getNivel(PerfilJugador.Estadistica estadistica) {
+<span class="fc" id="L19">        return niveles.get(estadistica);</span>
+    }
+
+    /** Guarda un nivel recuperado del archivo sin dejar que se salga del rango permitido. */
+    void setNivel(PerfilJugador.Estadistica estadistica, int nivel) {
+<span class="fc" id="L24">        niveles.put(estadistica, Math.max(1, Math.min(NIVEL_MAXIMO, nivel)));</span>
+<span class="fc" id="L25">    }</span>
+
+    public boolean puedeSubir(PerfilJugador.Estadistica estadistica) {
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        return getNivel(estadistica) &lt; NIVEL_MAXIMO;</span>
+    }
+
+    void subir(PerfilJugador.Estadistica estadistica) {
+<span class="fc" id="L32">        setNivel(estadistica, getNivel(estadistica) + 1);</span>
+<span class="fc" id="L33">    }</span>
+
+    void guardar(EscritorPartida e) {
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        for (PerfilJugador.Estadistica estadistica : PerfilJugador.Estadistica.values()) {</span>
+<span class="fc" id="L37">            e.entero(getNivel(estadistica), 4);</span>
+        }
+<span class="fc" id="L39">    }</span>
+
+    static EstadisticasPersonaje leer(LectorPartida l) {
+<span class="fc" id="L42">        EstadisticasPersonaje leidas = new EstadisticasPersonaje();</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        for (PerfilJugador.Estadistica estadistica : PerfilJugador.Estadistica.values()) {</span>
+<span class="fc" id="L44">            leidas.setNivel(estadistica, l.entero(4));</span>
+        }
+<span class="fc" id="L46">        return leidas;</span>
+    }
+
+    /** Cantidad de mejoras que ya tiene este personaje. */
+    public int getMejoras() {
+<span class="fc" id="L51">        int suma = 0;</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (int nivel : niveles.values()) suma += nivel - 1;</span>
+<span class="fc" id="L53">        return suma;</span>
+    }
+
+    /** Empieza en 500 y se duplica con cada mejora de este mismo personaje. */
+    public long getCostoSiguienteMejora() {
+<span class="fc" id="L58">        return PRECIO_INICIAL &lt;&lt; getMejoras();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

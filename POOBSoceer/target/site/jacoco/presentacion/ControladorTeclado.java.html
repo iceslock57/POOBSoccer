@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ControladorTeclado.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">ControladorTeclado.java</span></div><h1>ControladorTeclado.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import Domain.*;
+import javax.swing.*;
+import java.awt.event.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Lee el teclado y le avisa al dominio qué acción hizo cada jugador.
+ * No mueve a nadie por sí mismo: el movimiento y la física los resuelve el dominio (Jugador.realizarAccion).
+ *
+ * Hay dos tipos de teclas:
+ * - Continuas (moverse): mientras estén presionadas, el jugador se mueve en cada cuadro del juego.
+ *   Así el movimiento es fluido y no se detiene al presionar otra tecla al mismo tiempo.
+ * - De una vez (saltar, patear, poder): actúan en el momento en que se presionan.
+ *
+ * Controles: J1 = A/D mover, W saltar, S patear, Q poder.
+ *            J2 = flechas izquierda/derecha mover, flecha arriba saltar, M patear, N poder.
+ * Los nombres enviados deben coincidir con el orden de teclas de Domain.POOBSoccer.
+ */
+class ControladorTeclado {
+
+    private final POOBSoccer dominio;
+    private final JComponent raiz;
+    private final Runnable alActuar;
+    // Teclas continuas que están presionadas en este momento.
+<span class="fc" id="L30">    private final Set&lt;Integer&gt; teclasPresionadas = new HashSet&lt;&gt;();</span>
+    // Qué hace cada tecla continua en cada cuadro.
+<span class="fc" id="L32">    private final Map&lt;Integer, Runnable&gt; accionesContinuas = new HashMap&lt;&gt;();</span>
+
+    /**
+     * @param dominio  el juego al que se le envían las acciones
+     * @param raiz     componente de la ventana donde se registran las teclas
+     * @param alActuar qué hacer después de cada acción (por ejemplo, repintar la cancha)
+     */
+<span class="fc" id="L39">    ControladorTeclado(POOBSoccer dominio, JComponent raiz, Runnable alActuar) {</span>
+<span class="fc" id="L40">        this.dominio = dominio;</span>
+<span class="fc" id="L41">        this.raiz = raiz;</span>
+<span class="fc" id="L42">        this.alActuar = alActuar;</span>
+<span class="fc" id="L43">        instalarControles();</span>
+<span class="fc" id="L44">    }</span>
+
+    /** Olvida las teclas presionadas; se usa al empezar un partido o cuando la ventana pierde el foco. */
+    void reiniciar() {
+<span class="fc" id="L48">        teclasPresionadas.clear();</span>
+<span class="fc" id="L49">    }</span>
+
+    /** Se llama en cada cuadro del bucle del juego: mueve a los jugadores según las teclas que sigan presionadas. */
+    void procesarTeclasContinuas() {
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int tecla : teclasPresionadas) {</span>
+<span class="fc" id="L54">            accionesContinuas.get(tecla).run();</span>
+<span class="fc" id="L55">        }</span>
+<span class="fc" id="L56">    }</span>
+
+    // Internos
+
+    private void instalarControles() {
+        // Los key bindings usan WHEN_IN_FOCUSED_WINDOW, así que responden aunque el foco no esté en la cancha.
+<span class="fc" id="L62">        continua(KeyEvent.VK_A, &quot;p1left&quot;, () -&gt; ejecutar(1, &quot;A&quot;));</span>
+<span class="fc" id="L63">        continua(KeyEvent.VK_D, &quot;p1right&quot;, () -&gt; ejecutar(1, &quot;D&quot;));</span>
+<span class="fc" id="L64">        alPresionar(KeyEvent.VK_W, &quot;p1jump&quot;, () -&gt; accion(1, &quot;W&quot;));</span>
+<span class="fc" id="L65">        alPresionar(KeyEvent.VK_S, &quot;p1kick&quot;, () -&gt; accion(1, &quot;S&quot;));</span>
+<span class="fc" id="L66">        alPresionar(KeyEvent.VK_Q, &quot;p1power&quot;, () -&gt; accion(1, &quot;Q&quot;));</span>
+
+<span class="fc" id="L68">        continua(KeyEvent.VK_LEFT, &quot;p2left&quot;, () -&gt; ejecutar(2, &quot;LEFT&quot;));</span>
+<span class="fc" id="L69">        continua(KeyEvent.VK_RIGHT, &quot;p2right&quot;, () -&gt; ejecutar(2, &quot;RIGHT&quot;));</span>
+<span class="fc" id="L70">        alPresionar(KeyEvent.VK_UP, &quot;p2jump&quot;, () -&gt; accion(2, &quot;UP&quot;));</span>
+<span class="fc" id="L71">        alPresionar(KeyEvent.VK_M, &quot;p2kick&quot;, () -&gt; accion(2, &quot;M&quot;));</span>
+<span class="fc" id="L72">        alPresionar(KeyEvent.VK_N, &quot;p2power&quot;, () -&gt; accion(2, &quot;N&quot;));</span>
+<span class="fc" id="L73">    }</span>
+
+    /** Tecla que actúa una sola vez, en el momento en que se presiona. */
+    private void alPresionar(int key, String name, Runnable action) {
+<span class="fc" id="L77">        registrar(key, false, name, () -&gt; {</span>
+            // Las teclas solo actúan mientras hay una partida en curso y sin pausa.
+<span class="fc" id="L79">            Partido actual = dominio.getPartidoActual();</span>
+<span class="fc bfc" id="L80" title="All 6 branches covered.">            if (actual != null &amp;&amp; !dominio.isPausa() &amp;&amp; !actual.isTerminado()) action.run();</span>
+<span class="fc" id="L81">        });</span>
+<span class="fc" id="L82">    }</span>
+
+    /** Tecla que actúa en cada cuadro mientras esté presionada (ver procesarTeclasContinuas). */
+    private void continua(int key, String name, Runnable action) {
+<span class="fc" id="L86">        accionesContinuas.put(key, action);</span>
+<span class="fc" id="L87">        registrar(key, false, name + &quot;Presionada&quot;, () -&gt; teclasPresionadas.add(key));</span>
+        // Soltar siempre se registra, incluso en pausa; si no, la tecla quedaría &quot;pegada&quot; al reanudar.
+<span class="fc" id="L89">        registrar(key, true, name + &quot;Soltada&quot;, () -&gt; teclasPresionadas.remove(key));</span>
+<span class="fc" id="L90">    }</span>
+
+    private void registrar(int key, boolean alSoltar, String name, Runnable action) {
+<span class="fc" id="L93">        raiz.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(key, 0, alSoltar), name);</span>
+<span class="fc" id="L94">        raiz.getActionMap().put(name, new AbstractAction() {</span>
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="fc" id="L97">                action.run();</span>
+<span class="fc" id="L98">            }</span>
+        });
+<span class="fc" id="L100">    }</span>
+
+    /** Envía la acción al jugador y repinta (para teclas de una vez). */
+    private void accion(int n, String tecla) {
+<span class="fc" id="L104">        ejecutar(n, tecla);</span>
+<span class="fc" id="L105">        alActuar.run();</span>
+<span class="fc" id="L106">    }</span>
+
+    /** Envía la acción al jugador sin repintar (el bucle del juego ya repinta en cada cuadro). */
+    private void ejecutar(int n, String tecla) {
+<span class="fc" id="L110">        Partido p = dominio.getPartidoActual();</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (p == null) return;</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        Jugador j = n == 1 ? p.getJugador1() : p.getJugador2();</span>
+<span class="fc" id="L113">        j.realizarAccion(tecla, p);</span>
+<span class="fc" id="L114">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

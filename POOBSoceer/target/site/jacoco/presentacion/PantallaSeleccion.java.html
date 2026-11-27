@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PantallaSeleccion.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">PantallaSeleccion.java</span></div><h1>PantallaSeleccion.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import Domain.CatalogoPersonajes;
+import javax.swing.*;
+import java.awt.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.IntConsumer;
+
+/**
+ * Pantalla para elegir el país de cada jugador, el tamaño de la cancha y el objetivo del partido
+ * (minutos o goles). Guarda lo que el usuario elige y lo entrega con sus getters.
+ */
+class PantallaSeleccion extends JPanel {
+
+<span class="fc" id="L17">    private static final String[] TAMANOS = {&quot;Pequeña (800 x 550)&quot;, &quot;Mediana (1000 x 650)&quot;, &quot;Grande (1200 x 750)&quot;};</span>
+    // ANCHOS[i] y ALTOS[i] corresponden a TAMANOS[i].
+<span class="fc" id="L19">    private static final int[] ANCHOS = {800, 1000, 1200};</span>
+<span class="fc" id="L20">    private static final int[] ALTOS = {550, 650, 750};</span>
+
+    // Imagen de presentación de cada país. Los países que no estén aquí se muestran solo con su nombre.
+    // Para agregar otro: PAIS -&gt; &quot;recursos/fondo_&lt;pais&gt;.jpg&quot;.
+<span class="fc" id="L24">    private static final Map&lt;String, String&gt; IMAGENES_PAISES = Map.of(</span>
+            &quot;Corea del Sur&quot;, &quot;recursos/fondo_corea.jpg&quot;,
+            &quot;Camerún&quot;, &quot;recursos/fondo_camerun.jpg&quot;,
+            &quot;Rusia&quot;, &quot;recursos/fondo_rusia.jpg&quot;,
+            &quot;Japón&quot;, &quot;recursos/fondo_japon.png&quot;,
+            &quot;Estados Unidos&quot;, &quot;recursos/fondo_estadosunidos.png&quot;,
+            &quot;Nigeria&quot;, &quot;recursos/fondo_nigeria.jpg&quot;);
+    
+    private static final int ANCHO_TARJETA = 220, ALTO_TARJETA = 123;
+    // Las imágenes se escalan una sola vez y se guardan aquí, para no repetirlo en cada cambio.
+<span class="fc" id="L34">    private final Map&lt;String, ImageIcon&gt; imagenesEscaladas = new HashMap&lt;&gt;();</span>
+
+    // La lista sale del catálogo, así que agregar un personaje nuevo no obliga a tocar esta clase.
+<span class="fc" id="L37">    private final List&lt;String&gt; paises = CatalogoPersonajes.paises();</span>
+<span class="fc" id="L38">    private int indice1 = 0, indice2 = 1;</span>
+    private JLabel paisJ1, paisJ2;
+<span class="fc" id="L40">    private final JLabel tituloJ1 = new JLabel(&quot;JUGADOR 1&quot;), tituloJ2 = new JLabel(&quot;JUGADOR 2&quot;);</span>
+<span class="fc" id="L41">    private final JButton estadisticasJ1 = EstiloGUI.boton(&quot;ESTADÍSTICAS&quot;), estadisticasJ2 = EstiloGUI.boton(&quot;ESTADÍSTICAS&quot;);</span>
+<span class="fc" id="L42">    private final JLabel modoLabel = new JLabel();</span>
+<span class="fc" id="L43">    private final JComboBox&lt;String&gt; comboCancha = new JComboBox&lt;&gt;(TAMANOS);</span>
+<span class="fc" id="L44">    private final JSpinner spinnerObjetivo = new JSpinner(new SpinnerNumberModel(2, 1, 10, 1));</span>
+
+    /**
+     * @param alJugar  acción al presionar JUGAR (quien la recibe lee la configuración con los getters)
+     * @param alVolver acción al presionar VOLVER
+     * @param alVerEstadisticas acción que recibe el número del jugador que quiere ver sus estadísticas
+     */
+    PantallaSeleccion(Runnable alJugar, Runnable alVolver, IntConsumer alVerEstadisticas) {
+<span class="fc" id="L52">        super(new BorderLayout());</span>
+<span class="fc" id="L53">        estadisticasJ1.addActionListener(e -&gt; alVerEstadisticas.accept(1));</span>
+<span class="fc" id="L54">        estadisticasJ2.addActionListener(e -&gt; alVerEstadisticas.accept(2));</span>
+<span class="fc" id="L55">        JPanel p = EstiloGUI.fondo();</span>
+<span class="fc" id="L56">        p.setLayout(new BorderLayout(15, 15));</span>
+<span class="fc" id="L57">        p.add(EstiloGUI.titulo(&quot;ELIGE LOS PAÍSES Y CONFIGURA LA CANCHA&quot;, 26), BorderLayout.NORTH);</span>
+
+<span class="fc" id="L59">        JPanel centro = new JPanel(new GridLayout(1, 2, 30, 0));</span>
+<span class="fc" id="L60">        centro.setOpaque(false);</span>
+<span class="fc" id="L61">        centro.add(crearSelectorJugador(1));</span>
+<span class="fc" id="L62">        centro.add(crearSelectorJugador(2));</span>
+<span class="fc" id="L63">        p.add(centro, BorderLayout.CENTER);</span>
+
+<span class="fc" id="L65">        JPanel sur = new JPanel();</span>
+<span class="fc" id="L66">        sur.setOpaque(false);</span>
+<span class="fc" id="L67">        sur.setLayout(new BoxLayout(sur, BoxLayout.Y_AXIS));</span>
+<span class="fc" id="L68">        sur.add(crearOpciones());</span>
+<span class="fc" id="L69">        sur.add(crearBotones(alJugar, alVolver));</span>
+<span class="fc" id="L70">        p.add(sur, BorderLayout.SOUTH);</span>
+
+<span class="fc" id="L72">        add(p, BorderLayout.CENTER);</span>
+<span class="fc" id="L73">        refrescarPaises();</span>
+<span class="fc" id="L74">    }</span>
+
+    // Construcción de la pantalla
+
+    private JPanel crearOpciones() {
+<span class="fc" id="L79">        JPanel opciones = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 8));</span>
+<span class="fc" id="L80">        opciones.setOpaque(false);</span>
+<span class="fc" id="L81">        JLabel canchaLabel = new JLabel(&quot;Tamaño de cancha:&quot;);</span>
+<span class="fc" id="L82">        canchaLabel.setForeground(Color.WHITE);</span>
+<span class="fc" id="L83">        canchaLabel.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 16));</span>
+<span class="fc" id="L84">        comboCancha.setSelectedIndex(1);</span>
+        // Esta etiqueta cambia según el tipo de partido (duración o goles), ver prepararPara().
+<span class="fc" id="L86">        modoLabel.setForeground(Color.WHITE);</span>
+<span class="fc" id="L87">        modoLabel.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 16));</span>
+<span class="fc" id="L88">        opciones.add(canchaLabel);</span>
+<span class="fc" id="L89">        opciones.add(comboCancha);</span>
+<span class="fc" id="L90">        opciones.add(modoLabel);</span>
+<span class="fc" id="L91">        opciones.add(spinnerObjetivo);</span>
+<span class="fc" id="L92">        return opciones;</span>
+    }
+
+    private JPanel crearBotones(Runnable alJugar, Runnable alVolver) {
+<span class="fc" id="L96">        JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 8));</span>
+<span class="fc" id="L97">        botones.setOpaque(false);</span>
+<span class="fc" id="L98">        JButton atras = EstiloGUI.boton(&quot;VOLVER&quot;);</span>
+<span class="fc" id="L99">        atras.addActionListener(e -&gt; alVolver.run());</span>
+<span class="fc" id="L100">        botones.add(atras);</span>
+<span class="fc" id="L101">        JButton iniciar = EstiloGUI.boton(&quot;JUGAR&quot;);</span>
+<span class="fc" id="L102">        iniciar.addActionListener(e -&gt; alJugar.run());</span>
+<span class="fc" id="L103">        botones.add(iniciar);</span>
+<span class="fc" id="L104">        return botones;</span>
+    }
+
+    private JPanel crearSelectorJugador(int jugador) {
+<span class="fc" id="L108">        JPanel p = new JPanel(new GridBagLayout());</span>
+<span class="fc" id="L109">        p.setBackground(new Color(255, 255, 255, 225));</span>
+<span class="fc" id="L110">        p.setBorder(BorderFactory.createCompoundBorder(</span>
+<span class="fc" id="L111">                BorderFactory.createLineBorder(Color.WHITE, 4),</span>
+<span class="fc" id="L112">                BorderFactory.createEmptyBorder(15, 15, 15, 15)));</span>
+<span class="fc" id="L113">        GridBagConstraints c = new GridBagConstraints();</span>
+<span class="fc" id="L114">        c.gridx = 0;</span>
+<span class="fc" id="L115">        c.gridy = 0;</span>
+<span class="fc" id="L116">        c.gridwidth = 3;</span>
+<span class="fc" id="L117">        c.insets = new Insets(8, 8, 18, 8);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        p.add(jugador == 1 ? tituloJ1 : tituloJ2, c);</span>
+<span class="fc" id="L119">        c.gridy++;</span>
+<span class="fc" id="L120">        c.gridwidth = 1;</span>
+
+<span class="fc" id="L122">        JButton izq = new JButton(&quot;&lt;&lt;&quot;);</span>
+<span class="fc" id="L123">        izq.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 16));</span>
+<span class="fc" id="L124">        izq.setPreferredSize(new Dimension(54, 42));</span>
+<span class="fc" id="L125">        c.gridx = 0;</span>
+<span class="fc" id="L126">        p.add(izq, c);</span>
+
+<span class="fc" id="L128">        JLabel pais = new JLabel(&quot;&quot;, SwingConstants.CENTER);</span>
+<span class="fc" id="L129">        pais.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 18));</span>
+<span class="fc" id="L130">        pais.setOpaque(true);</span>
+<span class="fc" id="L131">        pais.setBackground(Color.WHITE);</span>
+<span class="fc" id="L132">        pais.setPreferredSize(new Dimension(ANCHO_TARJETA, ALTO_TARJETA));</span>
+<span class="fc" id="L133">        pais.setMinimumSize(new Dimension(ANCHO_TARJETA, ALTO_TARJETA));</span>
+<span class="fc" id="L134">        c.gridx = 1;</span>
+<span class="fc" id="L135">        p.add(pais, c);</span>
+
+<span class="fc" id="L137">        JButton der = new JButton(&quot;&gt;&gt;&quot;);</span>
+<span class="fc" id="L138">        der.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 16));</span>
+<span class="fc" id="L139">        der.setPreferredSize(new Dimension(54, 42));</span>
+<span class="fc" id="L140">        c.gridx = 2;</span>
+<span class="fc" id="L141">        p.add(der, c);</span>
+
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        JButton estadisticas = jugador == 1 ? estadisticasJ1 : estadisticasJ2;</span>
+<span class="fc" id="L144">        estadisticas.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 15));</span>
+<span class="fc" id="L145">        estadisticas.setPreferredSize(new Dimension(170, 38));</span>
+<span class="fc" id="L146">        c.gridx = 0;</span>
+<span class="fc" id="L147">        c.gridy++;</span>
+<span class="fc" id="L148">        c.gridwidth = 3;</span>
+<span class="fc" id="L149">        p.add(estadisticas, c);</span>
+
+        // &quot;&lt;&lt;&quot; retrocede y &quot;&gt;&gt;&quot; avanza por la lista completa de países.
+<span class="fc" id="L152">        izq.addActionListener(e -&gt; cambiar(jugador, -1));</span>
+<span class="fc" id="L153">        der.addActionListener(e -&gt; cambiar(jugador, 1));</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        if (jugador == 1) paisJ1 = pais;</span>
+<span class="fc" id="L155">        else paisJ2 = pais;</span>
+<span class="fc" id="L156">        return p;</span>
+    }
+
+    // Selección de países
+
+    /** Mueve la selección del jugador; floorMod hace que la lista dé la vuelta en ambos sentidos. */
+    private void cambiar(int jugador, int paso) {
+<span class="fc" id="L163">        int n = paises.size();</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (jugador == 1) indice1 = Math.floorMod(indice1 + paso, n);</span>
+<span class="fc" id="L165">        else indice2 = Math.floorMod(indice2 + paso, n);</span>
+<span class="fc" id="L166">        refrescarPaises();</span>
+<span class="fc" id="L167">    }</span>
+
+    private void refrescarPaises() {
+<span class="fc" id="L170">        mostrarPais(paisJ1, paises.get(indice1));</span>
+<span class="fc" id="L171">        mostrarPais(paisJ2, paises.get(indice2));</span>
+<span class="fc" id="L172">    }</span>
+
+    /** Muestra la imagen del país si existe; si no, solo su nombre. */
+    private void mostrarPais(JLabel tarjeta, String pais) {
+<span class="fc" id="L176">        ImageIcon imagen = imagenDe(pais);</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (imagen != null) {</span>
+            // La imagen ya trae escrito el nombre del país, así que no se repite el texto.
+<span class="fc" id="L179">            tarjeta.setIcon(imagen);</span>
+<span class="fc" id="L180">            tarjeta.setText(null);</span>
+<span class="fc" id="L181">            tarjeta.setToolTipText(pais);</span>
+        } else {
+<span class="nc" id="L183">            tarjeta.setIcon(null);</span>
+<span class="nc" id="L184">            tarjeta.setText(pais);</span>
+<span class="nc" id="L185">            tarjeta.setToolTipText(null);</span>
+        }
+<span class="fc" id="L187">    }</span>
+
+    /** Imagen del país escalada al tamaño de la tarjeta, o null si el país no tiene imagen o el archivo no está. */
+    private ImageIcon imagenDe(String pais) {
+<span class="fc" id="L191">        String ruta = IMAGENES_PAISES.get(pais);</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (ruta == null) return null;</span>
+<span class="fc" id="L193">        return imagenesEscaladas.computeIfAbsent(pais, p -&gt; {</span>
+<span class="fc" id="L194">            Image original = EstiloGUI.cargarImagen(ruta);</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">            if (original == null) return null;</span>
+<span class="fc" id="L196">            return new ImageIcon(original.getScaledInstance(ANCHO_TARJETA, ALTO_TARJETA, Image.SCALE_SMOOTH));</span>
+        });
+    }
+
+    // Lo que usa la ventana principal
+
+    /** Ajusta la pantalla al tipo de partido elegido: &quot;Tiempo&quot; o &quot;Goles&quot;. */
+    void prepararPara(String tipoPartido) {
+<span class="fc" id="L204">        refrescarPaises();</span>
+<span class="fc" id="L205">        boolean porTiempo = tipoPartido.equals(&quot;Tiempo&quot;);</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        modoLabel.setText(porTiempo ? &quot;Duración (minutos):&quot; : &quot;Goles para ganar:&quot;);</span>
+        // Valores por defecto: 2 minutos o 5 goles, según el tipo de partido.
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        spinnerObjetivo.setModel(new SpinnerNumberModel(porTiempo ? 2 : 5, 1, 10, 1));</span>
+<span class="fc" id="L209">    }</span>
+
+    /**
+     * Muestra contra quién se juega: otra persona si el perfil es null, o la máquina con ese perfil.
+     * La máquina no gana puntos, así que no tiene estadísticas para mejorar.
+     */
+    void mostrarRival(String perfilMaquina) {
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        tituloJ2.setText(perfilMaquina == null ? &quot;JUGADOR 2&quot; : &quot;MÁQUINA &quot; + perfilMaquina.toUpperCase());</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">        estadisticasJ2.setVisible(perfilMaquina == null);</span>
+<span class="fc" id="L218">    }</span>
+
+    String getPais1() {
+<span class="fc" id="L221">        return paises.get(indice1);</span>
+    }
+
+    String getPais2() {
+<span class="fc" id="L225">        return paises.get(indice2);</span>
+    }
+
+    /** Minutos de duración o goles para ganar, según el tipo de partido. */
+    int getObjetivo() {
+<span class="fc" id="L230">        return ((Number) spinnerObjetivo.getValue()).intValue();</span>
+    }
+
+    int getAnchoCancha() {
+<span class="fc" id="L234">        return ANCHOS[comboCancha.getSelectedIndex()];</span>
+    }
+
+    int getAltoCancha() {
+<span class="fc" id="L238">        return ALTOS[comboCancha.getSelectedIndex()];</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

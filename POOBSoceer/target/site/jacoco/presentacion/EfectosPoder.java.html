@@ -1,0 +1,541 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EfectosPoder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">EfectosPoder.java</span></div><h1>EfectosPoder.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import Domain.*;
+import java.awt.*;
+import java.awt.geom.Path2D;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Dibuja todo lo que se ve de los poderes: el aura de quien lo tiene listo, el tiro y el efecto sobre el rival.
+ * Un poder que no esté registrado aquí se dibuja con un brillo amarillo.
+ */
+final class EfectosPoder {
+
+<span class="fc" id="L15">    private static final Color COLOR_POR_DEFECTO = Color.YELLOW;</span>
+<span class="fc" id="L16">    private static final Color AZUL = new Color(60, 170, 255);</span>
+<span class="fc" id="L17">    private static final Color ELECTRICO = new Color(255, 235, 60);</span>
+<span class="fc" id="L18">    private static final Color VIENTO = new Color(150, 165, 175);</span>
+<span class="fc" id="L19">    private static final Color ILUSION = new Color(215, 80, 200);</span>
+<span class="fc" id="L20">    private static final Color HIELO = new Color(150, 230, 255);</span>
+<span class="fc" id="L21">    private static final Color FUEGO = new Color(255, 105, 25);</span>
+<span class="fc" id="L22">    private static final Color BRASA = new Color(255, 220, 80);</span>
+<span class="fc" id="L23">    private static final Color POLVO = new Color(165, 130, 85);</span>
+<span class="fc" id="L24">    private static final Color HOJA = new Color(70, 150, 60);</span>
+
+    /** Forma de dibujar un tiro alrededor del balón. */
+    private interface Tiro {
+        void dibujar(Graphics2D g, Balon b, long tiempo);
+    }
+
+    /** Forma de animar el aura alrededor de un personaje. */
+    private interface Aura {
+        void dibujar(Graphics2D g, int x, int y, long tiempo);
+    }
+
+<span class="fc" id="L36">    private static final Map&lt;Class&lt;?&gt;, Color&gt; COLORES = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L37">    private static final Map&lt;Class&lt;?&gt;, Aura&gt; AURAS = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L38">    private static final Map&lt;Class&lt;?&gt;, Tiro&gt; TIROS = new HashMap&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L41">        COLORES.put(PoderAuraAzul.class, AZUL);</span>
+<span class="fc" id="L42">        COLORES.put(PoderRayo.class, ELECTRICO);</span>
+<span class="fc" id="L43">        COLORES.put(PoderTornado.class, VIENTO);</span>
+<span class="fc" id="L44">        COLORES.put(PoderIlusion.class, ILUSION);</span>
+<span class="fc" id="L45">        COLORES.put(PoderHielo.class, HIELO);</span>
+<span class="fc" id="L46">        COLORES.put(PoderFuego.class, FUEGO);</span>
+
+        // Los poderes que no estén aquí muestran solo el brillo de su color.
+<span class="fc" id="L49">        AURAS.put(PoderAuraAzul.class, EfectosPoder::dibujarEnergia);</span>
+<span class="fc" id="L50">        AURAS.put(PoderRayo.class, EfectosPoder::dibujarTormenta);</span>
+<span class="fc" id="L51">        AURAS.put(PoderTornado.class, EfectosPoder::dibujarBrisa);</span>
+<span class="fc" id="L52">        AURAS.put(PoderIlusion.class, EfectosPoder::dibujarEspejismo);</span>
+<span class="fc" id="L53">        AURAS.put(PoderHielo.class, EfectosPoder::dibujarNevada);</span>
+<span class="fc" id="L54">        AURAS.put(PoderFuego.class, EfectosPoder::dibujarHoguera);</span>
+
+<span class="fc" id="L56">        TIROS.put(PoderAuraAzul.class, EfectosPoder::dibujarCometa);</span>
+<span class="fc" id="L57">        TIROS.put(PoderRayo.class, EfectosPoder::dibujarEsferaElectrica);</span>
+<span class="fc" id="L58">        TIROS.put(PoderTornado.class, EfectosPoder::dibujarTornado);</span>
+<span class="fc" id="L59">        TIROS.put(PoderHielo.class, EfectosPoder::dibujarBloqueDeHielo);</span>
+<span class="fc" id="L60">        TIROS.put(PoderFuego.class, EfectosPoder::dibujarOlaDeFuego);</span>
+<span class="fc" id="L61">        TIROS.put(PoderIlusion.class, EfectosPoder::dibujarDestellos);</span>
+<span class="fc" id="L62">    }</span>
+
+    private EfectosPoder() {
+    }
+
+    static Color colorDe(Poder poder) {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        return poder == null ? COLOR_POR_DEFECTO : COLORES.getOrDefault(poder.getClass(), COLOR_POR_DEFECTO);</span>
+    }
+
+    /** Brillo alrededor del personaje que ya tiene su poder listo. */
+    static void dibujarAura(Graphics2D g, Personaje p, int x, int y) {
+<span class="fc" id="L73">        Color color = colorDe(p.getPoderEspecial());</span>
+<span class="fc" id="L74">        g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 70));</span>
+<span class="fc" id="L75">        g.fillOval(x - 13, y - 13, Personaje.ANCHO + 26, Personaje.ALTO + 26);</span>
+<span class="fc" id="L76">        g.setColor(color);</span>
+<span class="fc" id="L77">        g.setStroke(new BasicStroke(4));</span>
+<span class="fc" id="L78">        g.drawOval(x - 9, y - 9, Personaje.ANCHO + 18, Personaje.ALTO + 18);</span>
+
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        Aura aura = p.getPoderEspecial() == null ? null : AURAS.get(p.getPoderEspecial().getClass());</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (aura != null) aura.dibujar(g, x, y, System.currentTimeMillis());</span>
+<span class="fc" id="L82">    }</span>
+
+    /** Adorno del balón cuando lleva un poder. Se dibuja detrás del balón. */
+    static void dibujarTiro(Graphics2D g, Balon b, Poder poder) {
+<span class="fc" id="L86">        dibujarTiro(g, b, poder, System.currentTimeMillis());</span>
+<span class="fc" id="L87">    }</span>
+
+    /** Igual que el anterior, pero en el instante de la animación que se indique. */
+    static void dibujarTiro(Graphics2D g, Balon b, Poder poder, long tiempo) {
+<span class="fc" id="L91">        Tiro tiro = TIROS.get(poder.getClass());</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (tiro == null) {</span>
+<span class="fc" id="L93">            dibujarBrillo(g, b, colorDe(poder));</span>
+        } else {
+<span class="fc" id="L95">            tiro.dibujar(g, b, tiempo);</span>
+        }
+<span class="fc" id="L97">    }</span>
+
+    /** Muestra el efecto que está sufriendo el personaje. */
+    static void dibujarEfectoSobre(Graphics2D g, Personaje p, int x, int y) {
+<span class="fc" id="L101">        long tiempo = System.currentTimeMillis();</span>
+
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (p.isEmpujado()) {</span>
+<span class="fc" id="L104">            dibujarEmpuje(g, x, y, tiempo);</span>
+<span class="fc" id="L105">            etiqueta(g, &quot;EMPUJADO&quot;, AZUL, x, y);</span>
+        }
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (p.isElectrificado()) {</span>
+<span class="fc" id="L108">            dibujarDescarga(g, x, y, tiempo);</span>
+<span class="fc" id="L109">            etiqueta(g, &quot;ELECTROCUTADO&quot;, ELECTRICO, x, y);</span>
+        }
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (p.isInconsciente()) {</span>
+<span class="fc" id="L112">            dibujarTorbellino(g, x, y, tiempo);</span>
+<span class="fc" id="L113">            etiqueta(g, &quot;INCONSCIENTE&quot;, Color.WHITE, x, y);</span>
+        }
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (p.isConfundido()) {</span>
+<span class="fc" id="L116">            dibujarDudas(g, x, y, tiempo);</span>
+<span class="fc" id="L117">            etiqueta(g, &quot;¿CUÁL ES?&quot;, ILUSION, x, y);</span>
+        }
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        if (p.isCongelado()) {</span>
+<span class="fc" id="L120">            dibujarPrisionDeHielo(g, x, y, tiempo);</span>
+<span class="fc" id="L121">            etiqueta(g, &quot;CONGELADO&quot;, HIELO, x, y);</span>
+        }
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (p.isQuemado()) {</span>
+<span class="fc" id="L124">            dibujarCuerpoEnLlamas(g, x, y, tiempo);</span>
+<span class="fc" id="L125">            etiqueta(g, &quot;QUEMÁNDOSE&quot;, BRASA, x, y);</span>
+        }
+<span class="fc" id="L127">    }</span>
+
+    private static void dibujarBrillo(Graphics2D g, Balon b, Color color) {
+<span class="fc" id="L130">        int r = b.getRadio() + 7;</span>
+<span class="fc" id="L131">        g.setColor(color);</span>
+<span class="fc" id="L132">        g.fillOval((int) b.getPosX() - r, (int) b.getPosY() - r, r * 2, r * 2);</span>
+<span class="fc" id="L133">    }</span>
+
+    /** Ondas de energía que se abren y chispas azules que suben alrededor de Corea. */
+    private static void dibujarEnergia(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L137">        g.setStroke(new BasicStroke(3));</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L139">            double fase = parte(tiempo, 900, i / 3.0);</span>
+<span class="fc" id="L140">            int margen = (int) (6 + fase * 32);</span>
+<span class="fc" id="L141">            g.setColor(transparente(AZUL, (int) (210 * (1 - fase))));</span>
+<span class="fc" id="L142">            g.drawOval(x - margen, y - margen, Personaje.ANCHO + margen * 2, Personaje.ALTO + margen * 2);</span>
+        }
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        for (int i = 0; i &lt; 9; i++) {</span>
+<span class="fc" id="L145">            double fase = parte(tiempo, 700, i * .37);</span>
+<span class="fc" id="L146">            int px = x - 12 + i * 37 % (Personaje.ANCHO + 24);</span>
+<span class="fc" id="L147">            int py = (int) (y + Personaje.ALTO - fase * (Personaje.ALTO + 30));</span>
+<span class="fc" id="L148">            g.setColor(transparente(Color.WHITE, (int) (230 * (1 - fase))));</span>
+<span class="fc" id="L149">            g.fillOval(px, py, 5, 11);</span>
+        }
+<span class="fc" id="L151">    }</span>
+
+    /** Cometa azul de Corea: una punta de luz con anillos que se van quedando atrás. */
+    private static void dibujarCometa(Graphics2D g, Balon b, long tiempo) {
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        int atras = b.getVelX() &gt;= 0 ? -1 : 1;</span>
+<span class="fc" id="L156">        double x = b.getPosX(), y = b.getPosY();</span>
+<span class="fc" id="L157">        int r = b.getRadio();</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L159">            Path2D cola = new Path2D.Double();</span>
+<span class="fc" id="L160">            double alto = r + 12 - i * 6;</span>
+<span class="fc" id="L161">            cola.moveTo(x, y - alto);</span>
+<span class="fc" id="L162">            cola.lineTo(x + atras * (125 - i * 25 + Math.sin(tiempo / 50.0 + i) * 8), y);</span>
+<span class="fc" id="L163">            cola.lineTo(x, y + alto);</span>
+<span class="fc" id="L164">            cola.closePath();</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">            g.setColor(transparente(i == 2 ? Color.WHITE : AZUL, 90 + i * 45));</span>
+<span class="fc" id="L166">            g.fill(cola);</span>
+        }
+<span class="fc" id="L168">        g.setStroke(new BasicStroke(3));</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L170">            double fase = parte(tiempo, 450, i / 3.0);</span>
+<span class="fc" id="L171">            int alto = (int) (22 + fase * 46);</span>
+<span class="fc" id="L172">            g.setColor(transparente(AZUL, (int) (220 * (1 - fase))));</span>
+<span class="fc" id="L173">            g.drawOval((int) (x + atras * (18 + fase * 80)) - 6, (int) y - alto / 2, 12, alto);</span>
+        }
+<span class="fc" id="L175">        dibujarBrillo(g, b, AZUL);</span>
+<span class="fc" id="L176">    }</span>
+
+    /** Tormenta eléctrica alrededor de Camerún. */
+    private static void dibujarTormenta(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L180">        long cambio = tiempo / 90;</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (int i = 0; i &lt; 5; i++) {</span>
+<span class="fc" id="L182">            double px = x - 18 + i * (Personaje.ANCHO + 36) / 4.0;</span>
+<span class="fc" id="L183">            dibujarRayo(g, px, y - 24, px + ruido(cambio, i) * 16, y + Personaje.ALTO + 6, 10, cambio + i);</span>
+        }
+<span class="fc" id="L185">    }</span>
+
+    /** Esfera eléctrica de Camerún, con rayos que saltan hacia atrás y alrededor. */
+    private static void dibujarEsferaElectrica(Graphics2D g, Balon b, long tiempo) {
+<span class="fc" id="L189">        long cambio = tiempo / 55;</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        int atras = b.getVelX() &gt;= 0 ? -1 : 1;</span>
+<span class="fc" id="L191">        double x = b.getPosX(), y = b.getPosY();</span>
+<span class="fc" id="L192">        int r = b.getRadio();</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        for (int i = -1; i &lt;= 1; i++) {</span>
+<span class="fc" id="L194">            dibujarRayo(g, x, y + i * 12, x + atras * 125, y + i * 30 + ruido(cambio, i + 7) * 14, 13, cambio + i * 5);</span>
+        }
+<span class="fc" id="L196">        int halo = r + 14;</span>
+<span class="fc" id="L197">        g.setColor(transparente(ELECTRICO, 110));</span>
+<span class="fc" id="L198">        g.fillOval((int) x - halo, (int) y - halo, halo * 2, halo * 2);</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        for (int i = 0; i &lt; 6; i++) {</span>
+<span class="fc" id="L200">            double angulo = Math.PI * i / 3 + ruido(cambio, i) * .5;</span>
+<span class="fc" id="L201">            dibujarRayo(g, x + Math.cos(angulo) * r, y + Math.sin(angulo) * r,</span>
+<span class="fc" id="L202">                    x + Math.cos(angulo) * (r + 26), y + Math.sin(angulo) * (r + 26), 6, cambio + i);</span>
+        }
+<span class="fc" id="L204">    }</span>
+
+    /** Ráfagas que giran alrededor de Nigeria y arrastran hojas. */
+    private static void dibujarBrisa(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L208">        g.setStroke(new BasicStroke(4));</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">        for (int i = 0; i &lt; 5; i++) {</span>
+<span class="fc" id="L210">            int ancho = Personaje.ANCHO + 26 + i % 2 * 18;</span>
+<span class="fc" id="L211">            int giro = (int) (tiempo / 3 + i * 72) % 360;</span>
+<span class="fc" id="L212">            g.setColor(transparente(VIENTO, 220));</span>
+<span class="fc" id="L213">            g.drawArc(x + Personaje.ANCHO / 2 - ancho / 2, y + i * Personaje.ALTO / 5, ancho, 20, giro, 200);</span>
+        }
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        for (int i = 0; i &lt; 5; i++) {</span>
+<span class="fc" id="L216">            double angulo = tiempo / 260.0 + i * 2 * Math.PI / 5;</span>
+<span class="fc" id="L217">            dibujarHoja(g, x + Personaje.ANCHO / 2.0 + Math.cos(angulo) * 48,</span>
+<span class="fc" id="L218">                    y + 10 + i * 16 + Math.sin(angulo) * 9, angulo);</span>
+        }
+<span class="fc" id="L220">    }</span>
+
+    /** Tornado de Nigeria: un embudo que se ensancha hacia arriba, con polvo en el suelo y hojas girando. */
+    private static void dibujarTornado(Graphics2D g, Balon b, long tiempo) {
+<span class="fc" id="L224">        double x = b.getPosX();</span>
+<span class="fc" id="L225">        int base = (int) b.getPosY() + b.getRadio();</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        for (int i = 0; i &lt; 6; i++) {</span>
+<span class="fc" id="L227">            double fase = parte(tiempo, 500, i / 6.0);</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">            int lado = i % 2 == 0 ? 1 : -1, tamano = (int) (8 + fase * 12);</span>
+<span class="fc" id="L229">            g.setColor(transparente(POLVO, (int) (170 * (1 - fase))));</span>
+<span class="fc" id="L230">            g.fillOval((int) (x + lado * (8 + fase * 46)) - tamano / 2, base - tamano, tamano, tamano);</span>
+        }
+<span class="fc" id="L232">        g.setStroke(new BasicStroke(5));</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        for (int i = 0; i &lt; 10; i++) {</span>
+<span class="fc" id="L234">            int ancho = 26 + i * 10;</span>
+<span class="fc" id="L235">            int vaiven = (int) (Math.sin(tiempo / 90.0 + i * .6) * (3 + i));</span>
+<span class="fc" id="L236">            int giro = (int) (tiempo / 2 + i * 50) % 360;</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">            g.setColor(transparente(i % 2 == 0 ? VIENTO : Color.WHITE, 225 - i * 12));</span>
+<span class="fc" id="L238">            g.drawArc((int) x - ancho / 2 + vaiven, base - 14 - i * 11, ancho, 15, giro, 260);</span>
+        }
+<span class="fc bfc" id="L240" title="All 2 branches covered.">        for (int i = 0; i &lt; 4; i++) {</span>
+<span class="fc" id="L241">            double angulo = tiempo / 120.0 + i * Math.PI / 2;</span>
+<span class="fc" id="L242">            dibujarHoja(g, x + Math.cos(angulo) * (22 + i * 9), base - 24 - i * 22 + Math.sin(angulo) * 6, angulo);</span>
+        }
+<span class="fc" id="L244">    }</span>
+
+    /** Reflejos de Estados Unidos: dos siluetas que van y vienen y ocho balones pequeños que giran. */
+    private static void dibujarEspejismo(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L248">        int vaiven = (int) (12 + Math.sin(tiempo / 180.0) * 14);</span>
+<span class="fc" id="L249">        g.setColor(transparente(ILUSION, 75));</span>
+<span class="fc" id="L250">        g.fillOval(x - vaiven, y, Personaje.ANCHO, Personaje.ALTO);</span>
+<span class="fc" id="L251">        g.setColor(transparente(AZUL, 75));</span>
+<span class="fc" id="L252">        g.fillOval(x + vaiven, y, Personaje.ANCHO, Personaje.ALTO);</span>
+
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (int i = 0; i &lt; 8; i++) {</span>
+<span class="fc" id="L255">            double angulo = tiempo / 420.0 + Math.PI * i / 4;</span>
+<span class="fc" id="L256">            int bx = (int) (x + Personaje.ANCHO / 2.0 + Math.cos(angulo) * 50);</span>
+<span class="fc" id="L257">            int by = (int) (y + Personaje.ALTO / 2.0 + Math.sin(angulo) * 56);</span>
+<span class="fc" id="L258">            g.setColor(Color.WHITE);</span>
+<span class="fc" id="L259">            g.fillOval(bx - 6, by - 6, 12, 12);</span>
+<span class="fc" id="L260">            g.setColor(ILUSION);</span>
+<span class="fc" id="L261">            g.setStroke(new BasicStroke(2));</span>
+<span class="fc" id="L262">            g.drawOval(bx - 6, by - 6, 12, 12);</span>
+        }
+<span class="fc" id="L264">    }</span>
+
+    /** Estrellas que giran alrededor del balón. Solo dependen del tiempo, así los ocho balones se ven iguales. */
+    private static void dibujarDestellos(Graphics2D g, Balon b, long tiempo) {
+<span class="fc" id="L268">        int r = b.getRadio() + 9;</span>
+<span class="fc" id="L269">        g.setColor(transparente(ILUSION, (int) (90 + 50 * Math.sin(tiempo / 120.0))));</span>
+<span class="fc" id="L270">        g.fillOval((int) b.getPosX() - r, (int) b.getPosY() - r, r * 2, r * 2);</span>
+
+<span class="fc" id="L272">        Color[] colores = {new Color(225, 45, 60), Color.WHITE, new Color(45, 85, 200)};</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        for (int i = 0; i &lt; 6; i++) {</span>
+<span class="fc" id="L274">            double angulo = tiempo / 160.0 + Math.PI * i / 3;</span>
+<span class="fc" id="L275">            g.setColor(colores[i % 3]);</span>
+<span class="fc" id="L276">            g.fill(estrella((int) b.getPosX() + Math.cos(angulo) * (r + 3),</span>
+<span class="fc" id="L277">                    (int) b.getPosY() + Math.sin(angulo) * (r + 3), 7));</span>
+        }
+<span class="fc" id="L279">    }</span>
+
+    /** Copos de nieve que giran alrededor de Rusia cuando tiene el poder listo. */
+    private static void dibujarNevada(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L283">        double cx = x + Personaje.ANCHO / 2.0, cy = y + Personaje.ALTO / 2.0;</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">        for (int i = 0; i &lt; 6; i++) {</span>
+<span class="fc" id="L285">            double angulo = tiempo / 700.0 + Math.PI * i / 3;</span>
+<span class="fc" id="L286">            dibujarCopo(g, cx + Math.cos(angulo) * 46, cy + Math.sin(angulo) * 52, 8, tiempo / 400.0 + i);</span>
+        }
+<span class="fc" id="L288">    }</span>
+
+    /** Llamas que suben alrededor de Japón cuando tiene el poder listo. */
+    private static void dibujarHoguera(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L292">        int base = y + Personaje.ALTO + 4;</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        for (int i = 0; i &lt; 7; i++) {</span>
+<span class="fc" id="L294">            double lx = x - 14 + i * (Personaje.ANCHO + 28) / 6.0;</span>
+<span class="fc" id="L295">            double alto = 34 + 16 * Math.sin(tiempo / 90.0 + i * 1.9) + (i % 2) * 14;</span>
+<span class="fc" id="L296">            dibujarLlama(g, lx, base, 15, alto, tiempo, i);</span>
+        }
+<span class="fc" id="L298">    }</span>
+
+    /** Cristal que gira con el balón de Rusia, con copos que se van quedando atrás. */
+    private static void dibujarBloqueDeHielo(Graphics2D g, Balon b, long tiempo) {
+<span class="fc" id="L302">        double rapidez = Math.max(1, Math.hypot(b.getVelX(), b.getVelY()));</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">        for (int i = 4; i &gt;= 1; i--) {</span>
+<span class="fc" id="L304">            double atrasX = b.getPosX() - b.getVelX() / rapidez * i * 22;</span>
+<span class="fc" id="L305">            double atrasY = b.getPosY() - b.getVelY() / rapidez * i * 22 + Math.sin(tiempo / 100.0 + i) * 6;</span>
+<span class="fc" id="L306">            dibujarCopo(g, atrasX, atrasY, 12 - i * 1.7, tiempo / 200.0 + i);</span>
+        }
+<span class="fc" id="L308">        Shape cristal = poligono(b.getPosX(), b.getPosY(), b.getRadio() + 13, 6, tiempo / 130.0);</span>
+<span class="fc" id="L309">        g.setColor(new Color(HIELO.getRed(), HIELO.getGreen(), HIELO.getBlue(), 190));</span>
+<span class="fc" id="L310">        g.fill(cristal);</span>
+<span class="fc" id="L311">        g.setColor(new Color(70, 150, 205));</span>
+<span class="fc" id="L312">        g.setStroke(new BasicStroke(3));</span>
+<span class="fc" id="L313">        g.draw(cristal);</span>
+<span class="fc" id="L314">    }</span>
+
+    /** Cola de llamas que sigue al balón de Japón. */
+    private static void dibujarOlaDeFuego(Graphics2D g, Balon b, long tiempo) {
+<span class="fc" id="L318">        double rapidez = Math.max(1, Math.hypot(b.getVelX(), b.getVelY()));</span>
+<span class="fc" id="L319">        double dx = b.getVelX() / rapidez, dy = b.getVelY() / rapidez;</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">        for (int i = 7; i &gt;= 1; i--) {</span>
+<span class="fc" id="L321">            double vaiven = Math.sin(tiempo / 60.0 + i) * i;</span>
+<span class="fc" id="L322">            double cx = b.getPosX() - dx * i * 14 - dy * vaiven;</span>
+<span class="fc" id="L323">            double cy = b.getPosY() - dy * i * 14 + dx * vaiven;</span>
+<span class="fc" id="L324">            double r = b.getRadio() + 8 - i * 2.4;</span>
+            // Cerca del balón es amarilla y hacia la punta se vuelve roja.
+<span class="fc" id="L326">            g.setColor(new Color(255, Math.max(30, 205 - i * 25), 30, 225 - i * 22));</span>
+<span class="fc" id="L327">            g.fillOval((int) (cx - r), (int) (cy - r), (int) (r * 2), (int) (r * 2));</span>
+        }
+<span class="fc" id="L329">        dibujarBrillo(g, b, FUEGO);</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">        for (int i = 0; i &lt; 5; i++) {</span>
+<span class="fc" id="L331">            double lx = b.getPosX() + (i - 2) * 9;</span>
+<span class="fc" id="L332">            dibujarLlama(g, lx, b.getPosY() - 6, 12, 26 + 8 * Math.sin(tiempo / 70.0 + i * 2), tiempo, i);</span>
+        }
+<span class="fc" id="L334">    }</span>
+
+    /** Bloque de hielo alrededor del cuerpo, con puntas arriba y un brillo que lo recorre. */
+    private static void dibujarPrisionDeHielo(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L338">        int izquierda = x - 8, ancho = Personaje.ANCHO + 16, abajo = y + Personaje.ALTO + 2;</span>
+<span class="fc" id="L339">        int[] alturas = {6, -14, 2, -18, 0, -10, 6};</span>
+<span class="fc" id="L340">        Path2D bloque = new Path2D.Double();</span>
+<span class="fc" id="L341">        bloque.moveTo(izquierda, abajo);</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        for (int i = 0; i &lt; alturas.length; i++) {</span>
+<span class="fc" id="L343">            bloque.lineTo(izquierda + ancho * i / (double) (alturas.length - 1), y + alturas[i]);</span>
+        }
+<span class="fc" id="L345">        bloque.lineTo(izquierda + ancho, abajo);</span>
+<span class="fc" id="L346">        bloque.closePath();</span>
+
+<span class="fc" id="L348">        g.setColor(new Color(HIELO.getRed(), HIELO.getGreen(), HIELO.getBlue(), 135));</span>
+<span class="fc" id="L349">        g.fill(bloque);</span>
+<span class="fc" id="L350">        g.setColor(new Color(235, 250, 255));</span>
+<span class="fc" id="L351">        g.setStroke(new BasicStroke(3));</span>
+<span class="fc" id="L352">        g.draw(bloque);</span>
+
+<span class="fc" id="L354">        int brillo = (int) (tiempo / 12 % (Personaje.ALTO - 20));</span>
+<span class="fc" id="L355">        g.drawLine(izquierda + 8, y + 22 + brillo, izquierda + 26, y + 4 + brillo);</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L357">            double cx = izquierda + 8 + i * (ancho - 16) / 2.0;</span>
+<span class="fc" id="L358">            dibujarCopo(g, cx, y + 20 + i % 2 * 34, 6, tiempo / 500.0 + i);</span>
+        }
+<span class="fc" id="L360">    }</span>
+
+    private static void dibujarCuerpoEnLlamas(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc bfc" id="L363" title="All 2 branches covered.">        for (int i = 0; i &lt; 6; i++) {</span>
+<span class="fc" id="L364">            double lx = x + 2 + i * (Personaje.ANCHO - 4) / 5.0;</span>
+<span class="fc" id="L365">            double base = y + Personaje.ALTO - (i % 2) * 22;</span>
+<span class="fc" id="L366">            dibujarLlama(g, lx, base, 13, 34 + 12 * Math.sin(tiempo / 80.0 + i * 1.7), tiempo, i);</span>
+        }
+<span class="fc" id="L368">    }</span>
+
+    /** Copo de seis puntas. */
+    private static void dibujarCopo(Graphics2D g, double cx, double cy, double r, double giro) {
+<span class="fc" id="L372">        g.setStroke(new BasicStroke(2));</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L374">            double angulo = giro + Math.PI * i / 3;</span>
+<span class="fc" id="L375">            int dx = (int) Math.round(Math.cos(angulo) * r), dy = (int) Math.round(Math.sin(angulo) * r);</span>
+<span class="fc" id="L376">            g.setColor(Color.WHITE);</span>
+<span class="fc" id="L377">            g.drawLine((int) cx - dx, (int) cy - dy, (int) cx + dx, (int) cy + dy);</span>
+        }
+<span class="fc" id="L379">        g.setColor(new Color(70, 150, 205));</span>
+<span class="fc" id="L380">        g.fillOval((int) cx - 2, (int) cy - 2, 4, 4);</span>
+<span class="fc" id="L381">    }</span>
+
+    /** Llama naranja con el centro amarillo; la punta se mueve de lado a lado. */
+    private static void dibujarLlama(Graphics2D g, double cx, double base, double ancho, double alto, long tiempo, int n) {
+<span class="fc" id="L385">        double punta = Math.sin(tiempo / 110.0 + n * 1.3) * ancho * .5;</span>
+<span class="fc" id="L386">        g.setColor(new Color(FUEGO.getRed(), FUEGO.getGreen(), FUEGO.getBlue(), 190));</span>
+<span class="fc" id="L387">        g.fill(llama(cx, base, ancho, alto, punta));</span>
+<span class="fc" id="L388">        g.setColor(new Color(BRASA.getRed(), BRASA.getGreen(), BRASA.getBlue(), 210));</span>
+<span class="fc" id="L389">        g.fill(llama(cx, base, ancho * .5, alto * .55, punta * .5));</span>
+<span class="fc" id="L390">    }</span>
+
+    private static Shape llama(double cx, double base, double ancho, double alto, double punta) {
+<span class="fc" id="L393">        Path2D f = new Path2D.Double();</span>
+<span class="fc" id="L394">        f.moveTo(cx, base);</span>
+<span class="fc" id="L395">        f.curveTo(cx - ancho, base - alto * .15, cx - ancho * .6, base - alto * .55, cx + punta, base - alto);</span>
+<span class="fc" id="L396">        f.curveTo(cx + ancho * .6, base - alto * .55, cx + ancho, base - alto * .15, cx, base);</span>
+<span class="fc" id="L397">        f.closePath();</span>
+<span class="fc" id="L398">        return f;</span>
+    }
+
+    private static Shape poligono(double cx, double cy, double r, int lados, double giro) {
+<span class="fc" id="L402">        Path2D figura = new Path2D.Double();</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">        for (int i = 0; i &lt; lados; i++) {</span>
+<span class="fc" id="L404">            double angulo = giro + 2 * Math.PI * i / lados;</span>
+<span class="fc" id="L405">            double px = cx + Math.cos(angulo) * r, py = cy + Math.sin(angulo) * r;</span>
+<span class="fc bfc" id="L406" title="All 2 branches covered.">            if (i == 0) figura.moveTo(px, py);</span>
+<span class="fc" id="L407">            else figura.lineTo(px, py);</span>
+        }
+<span class="fc" id="L409">        figura.closePath();</span>
+<span class="fc" id="L410">        return figura;</span>
+    }
+
+    /** Ondas de choque y líneas de velocidad sobre el rival empujado. */
+    private static void dibujarEmpuje(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L415">        g.setStroke(new BasicStroke(3));</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">        for (int i = 0; i &lt; 2; i++) {</span>
+<span class="fc" id="L417">            double fase = parte(tiempo, 400, i / 2.0);</span>
+<span class="fc" id="L418">            int margen = (int) (fase * 26);</span>
+<span class="fc" id="L419">            g.setColor(transparente(AZUL, (int) (230 * (1 - fase))));</span>
+<span class="fc" id="L420">            g.drawOval(x - margen, y - margen, Personaje.ANCHO + margen * 2, Personaje.ALTO + margen * 2);</span>
+        }
+<span class="fc" id="L422">        g.setColor(AZUL);</span>
+<span class="fc bfc" id="L423" title="All 2 branches covered.">        for (int i = 0; i &lt; 4; i++) {</span>
+<span class="fc" id="L424">            int alto = y + 14 + i * 17, corrido = (int) (parte(tiempo, 250, i * .3) * 14);</span>
+<span class="fc" id="L425">            g.drawLine(x - 30 + corrido, alto, x - 10 + corrido, alto);</span>
+<span class="fc" id="L426">            g.drawLine(x + Personaje.ANCHO + 10 - corrido, alto, x + Personaje.ANCHO + 30 - corrido, alto);</span>
+        }
+<span class="fc" id="L428">    }</span>
+
+    /** Rayos que caen sobre el rival y le recorren el cuerpo. */
+    private static void dibujarDescarga(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L432">        long cambio = tiempo / 80;</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L434">            double px = x + 6 + i * (Personaje.ANCHO - 12) / 2.0;</span>
+<span class="fc" id="L435">            dibujarRayo(g, px + ruido(cambio, i) * 18, y - 70, px, y + Personaje.ALTO - 6, 13, cambio + i * 3);</span>
+        }
+<span class="fc bfc" id="L437" title="All 2 branches covered.">        g.setColor(transparente(ELECTRICO, cambio % 2 == 0 ? 80 : 30));</span>
+<span class="fc" id="L438">        g.fillOval(x - 8, y - 4, Personaje.ANCHO + 16, Personaje.ALTO + 8);</span>
+<span class="fc" id="L439">    }</span>
+
+    /** Torbellino que envuelve al rival inconsciente y estrellas sobre su cabeza. */
+    private static void dibujarTorbellino(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L443">        g.setStroke(new BasicStroke(4));</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">        for (int i = 0; i &lt; 4; i++) {</span>
+<span class="fc" id="L445">            int ancho = Personaje.ANCHO - 8 + i * 12;</span>
+<span class="fc" id="L446">            g.setColor(transparente(VIENTO, 210));</span>
+<span class="fc" id="L447">            g.drawArc(x + Personaje.ANCHO / 2 - ancho / 2, y + Personaje.ALTO - 8 - i * 20, ancho, 16,</span>
+                    (int) (tiempo / 2 + i * 80) % 360, 230);
+        }
+<span class="fc" id="L450">        g.setColor(ELECTRICO);</span>
+<span class="fc bfc" id="L451" title="All 2 branches covered.">        for (int i = 0; i &lt; 4; i++) {</span>
+<span class="fc" id="L452">            double angulo = tiempo / 220.0 + Math.PI * i / 2;</span>
+<span class="fc" id="L453">            g.fill(estrella(x + Personaje.ANCHO / 2.0 + Math.cos(angulo) * 32, y - 4 + Math.sin(angulo) * 8, 8));</span>
+        }
+<span class="fc" id="L455">    }</span>
+
+    /** Signos de pregunta que giran alrededor del rival confundido. */
+    private static void dibujarDudas(Graphics2D g, int x, int y, long tiempo) {
+<span class="fc" id="L459">        Font anterior = g.getFont();</span>
+<span class="fc" id="L460">        g.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 24));</span>
+<span class="fc bfc" id="L461" title="All 2 branches covered.">        for (int i = 0; i &lt; 4; i++) {</span>
+<span class="fc" id="L462">            double angulo = tiempo / 300.0 + Math.PI * i / 2;</span>
+<span class="fc" id="L463">            int px = (int) (x + Personaje.ANCHO / 2.0 - 7 + Math.cos(angulo) * 44);</span>
+<span class="fc" id="L464">            int py = (int) (y + Personaje.ALTO / 2.0 + 8 + Math.sin(angulo) * 34);</span>
+<span class="fc bfc" id="L465" title="All 2 branches covered.">            g.setColor(i % 2 == 0 ? ILUSION : AZUL);</span>
+<span class="fc" id="L466">            g.drawString(&quot;?&quot;, px, py);</span>
+        }
+<span class="fc" id="L468">        g.setFont(anterior);</span>
+<span class="fc" id="L469">    }</span>
+
+    /** Línea quebrada amarilla con el centro blanco. La semilla hace que cambie de forma cada cierto tiempo. */
+    private static void dibujarRayo(Graphics2D g, double x1, double y1, double x2, double y2, double desvio, long semilla) {
+<span class="fc" id="L473">        int tramos = 6;</span>
+<span class="fc" id="L474">        double largo = Math.max(1, Math.hypot(x2 - x1, y2 - y1));</span>
+<span class="fc" id="L475">        double nx = -(y2 - y1) / largo, ny = (x2 - x1) / largo;</span>
+<span class="fc" id="L476">        Path2D rayo = new Path2D.Double();</span>
+<span class="fc" id="L477">        rayo.moveTo(x1, y1);</span>
+<span class="fc bfc" id="L478" title="All 2 branches covered.">        for (int i = 1; i &lt; tramos; i++) {</span>
+<span class="fc" id="L479">            double avance = i / (double) tramos, corrido = ruido(semilla, i) * desvio;</span>
+<span class="fc" id="L480">            rayo.lineTo(x1 + (x2 - x1) * avance + nx * corrido, y1 + (y2 - y1) * avance + ny * corrido);</span>
+        }
+<span class="fc" id="L482">        rayo.lineTo(x2, y2);</span>
+<span class="fc" id="L483">        g.setColor(ELECTRICO);</span>
+<span class="fc" id="L484">        g.setStroke(new BasicStroke(4));</span>
+<span class="fc" id="L485">        g.draw(rayo);</span>
+<span class="fc" id="L486">        g.setColor(Color.WHITE);</span>
+<span class="fc" id="L487">        g.setStroke(new BasicStroke(1.5f));</span>
+<span class="fc" id="L488">        g.draw(rayo);</span>
+<span class="fc" id="L489">    }</span>
+
+    private static void dibujarHoja(Graphics2D g, double cx, double cy, double giro) {
+<span class="fc" id="L492">        Graphics2D h = (Graphics2D) g.create();</span>
+<span class="fc" id="L493">        h.translate(cx, cy);</span>
+<span class="fc" id="L494">        h.rotate(giro * 2);</span>
+<span class="fc" id="L495">        h.setColor(HOJA);</span>
+<span class="fc" id="L496">        h.fillOval(-6, -3, 12, 6);</span>
+<span class="fc" id="L497">        h.dispose();</span>
+<span class="fc" id="L498">    }</span>
+
+    /** Valor entre -1 y 1 que parece al azar, pero es siempre el mismo para los mismos datos. */
+    private static double ruido(long semilla, int n) {
+<span class="fc" id="L502">        double v = Math.sin(semilla * 12.9898 + n * 78.233) * 43758.5453;</span>
+<span class="fc" id="L503">        return (v - Math.floor(v)) * 2 - 1;</span>
+    }
+
+    /** Avance de 0 a 1 de una animación que se repite; el desfase evita que todas vayan a la vez. */
+    private static double parte(long tiempo, int duracion, double desfase) {
+<span class="fc" id="L508">        return (tiempo % duracion / (double) duracion + desfase) % 1;</span>
+    }
+
+    private static Color transparente(Color color, int alfa) {
+<span class="fc" id="L512">        return new Color(color.getRed(), color.getGreen(), color.getBlue(), Math.max(0, Math.min(255, alfa)));</span>
+    }
+
+    private static Shape estrella(double cx, double cy, double r) {
+<span class="fc" id="L516">        Path2D e = new Path2D.Double();</span>
+<span class="fc bfc" id="L517" title="All 2 branches covered.">        for (int i = 0; i &lt; 10; i++) {</span>
+<span class="fc bfc" id="L518" title="All 2 branches covered.">            double radio = i % 2 == 0 ? r : r * .45;</span>
+<span class="fc" id="L519">            double angulo = -Math.PI / 2 + Math.PI * i / 5;</span>
+<span class="fc" id="L520">            double px = cx + Math.cos(angulo) * radio, py = cy + Math.sin(angulo) * radio;</span>
+<span class="fc bfc" id="L521" title="All 2 branches covered.">            if (i == 0) e.moveTo(px, py);</span>
+<span class="fc" id="L522">            else e.lineTo(px, py);</span>
+        }
+<span class="fc" id="L524">        e.closePath();</span>
+<span class="fc" id="L525">        return e;</span>
+    }
+
+    /** Escribe el nombre del efecto encima del personaje, con un fondo oscuro para que se lea bien. */
+    private static void etiqueta(Graphics2D g, String texto, Color color, int x, int y) {
+<span class="fc" id="L530">        Font anterior = g.getFont();</span>
+<span class="fc" id="L531">        g.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 13));</span>
+<span class="fc" id="L532">        int ancho = g.getFontMetrics().stringWidth(texto);</span>
+<span class="fc" id="L533">        int tx = x + Personaje.ANCHO / 2 - ancho / 2;</span>
+<span class="fc" id="L534">        g.setColor(new Color(0, 0, 0, 170));</span>
+<span class="fc" id="L535">        g.fillRoundRect(tx - 6, y - 48, ancho + 12, 20, 10, 10);</span>
+<span class="fc" id="L536">        g.setColor(color);</span>
+<span class="fc" id="L537">        g.drawString(texto, tx, y - 33);</span>
+<span class="fc" id="L538">        g.setFont(anterior);</span>
+<span class="fc" id="L539">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

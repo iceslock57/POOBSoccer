@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Cancha.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">Cancha.java</span></div><h1>Cancha.java</h1><pre class="source lang-java linenums">package Domain;
+
+/** Cancha configurable. El suelo está 90 px por encima del borde inferior. */
+public class Cancha {
+
+    /** Medidas de cada arco. La imagen del arco se estira para que sus palos queden justo en estos bordes. */
+    public static final int ALTO_ARCO = 140, ANCHO_ARCO = 115;
+
+    private final int ancho, alto, suelo;
+    private final Arco arcoIzquierdo, arcoDerecho;
+
+<span class="fc" id="L12">    public Cancha(int ancho, int alto) {</span>
+<span class="pc bpc" id="L13" title="2 of 4 branches missed.">        if (ancho &lt; 700 || alto &lt; 500) throw new IllegalArgumentException(&quot;La cancha debe medir al menos 700x500&quot;);</span>
+
+<span class="fc" id="L15">        this.ancho = ancho;</span>
+<span class="fc" id="L16">        this.alto = alto;</span>
+<span class="fc" id="L17">        this.suelo = alto - 100;</span>
+
+<span class="fc" id="L19">        int altoArco = ALTO_ARCO, anchoArco = ANCHO_ARCO, y = suelo - altoArco;</span>
+
+<span class="fc" id="L21">        arcoIzquierdo = new Arco(0, y, anchoArco, altoArco, &quot;Jugador 1&quot;, true);</span>
+<span class="fc" id="L22">        arcoDerecho = new Arco(ancho - anchoArco, y, anchoArco, altoArco, &quot;Jugador 2&quot;, false);</span>
+<span class="fc" id="L23">    }</span>
+
+    public Arco esGol(Balon b) {
+        // Gol al cruzar el plano interior de la porteria; usa la geometria real.
+<span class="fc" id="L27">        double y = b.getPosY();</span>
+<span class="fc" id="L28">        int r = b.getRadio();</span>
+
+<span class="fc" id="L30">        double arriba = arcoIzquierdo.getPosY();</span>
+<span class="fc" id="L31">        double abajo = arriba + arcoIzquierdo.getAlto();</span>
+
+<span class="pc bpc" id="L33" title="1 of 4 branches missed.">        boolean dentro = y - r &gt;= arriba &amp;&amp; y + r &lt;= abajo;</span>
+
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (!dentro) return null;</span>
+
+<span class="fc" id="L37">        double planoIzq = arcoIzquierdo.getPosX() + arcoIzquierdo.getAncho();</span>
+<span class="fc" id="L38">        double planoDer = arcoDerecho.getPosX();</span>
+
+<span class="fc bfc" id="L40" title="All 4 branches covered.">        if (b.getVelX() &lt; 0 &amp;&amp; b.getPosX() - r &lt;= planoIzq) return arcoIzquierdo;</span>
+<span class="fc bfc" id="L41" title="All 4 branches covered.">        if (b.getVelX() &gt; 0 &amp;&amp; b.getPosX() + r &gt;= planoDer) return arcoDerecho;</span>
+
+<span class="fc" id="L43">        return null;</span>
+    }
+
+    public int getAncho() {
+<span class="fc" id="L47">        return ancho;</span>
+    }
+
+    public int getAlto() {
+<span class="fc" id="L51">        return alto;</span>
+    }
+
+    public int getSuelo() {
+<span class="fc" id="L55">        return suelo;</span>
+    }
+
+    public Arco getArcoIzquierdo() {
+<span class="fc" id="L59">        return arcoIzquierdo;</span>
+    }
+
+    public Arco getArcoDerecho() {
+<span class="fc" id="L63">        return arcoDerecho;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

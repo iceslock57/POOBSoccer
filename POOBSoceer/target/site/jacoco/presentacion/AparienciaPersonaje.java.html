@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AparienciaPersonaje.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">AparienciaPersonaje.java</span></div><h1>AparienciaPersonaje.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import Domain.Personaje;
+import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Imágenes de un país (cabeza y zapato) y cómo dibujarlas dentro de la caja del personaje
+ * (Personaje.ANCHO x Personaje.ALTO).
+ * Los países sin imágenes registradas se siguen dibujando con la figura básica de PanelCancha.
+ *
+ * Para agregar un país: una línea más en REGISTRO, indicando hacia dónde mira cada imagen original.
+ */
+final class AparienciaPersonaje {
+
+    // Caja del personaje en el dominio.
+    private static final int ANCHO = Personaje.ANCHO, ALTO = Personaje.ALTO;
+    // Tamaño con el que se dibuja cada pieza: la cabeza arriba y el zapato abajo, ocupando todo el alto de la caja.
+    private static final int ANCHO_CABEZA = 60, ALTO_CABEZA = 55;
+    // El zapato es grande para que se note con qué parte se le pega al balón; su parte de arriba queda bajo la cabeza.
+    private static final int ANCHO_ZAPATO = 46, ALTO_ZAPATO = ALTO - ALTO_CABEZA + 8;
+    // Lo que avanza el pie en la mitad de la patada.
+    private static final int AVANCE_PATADA = 16;
+    // Ángulo máximo que sube la punta del zapato a mitad de la patada.
+<span class="fc" id="L26">    private static final double ANGULO_PATADA = Math.toRadians(65);</span>
+
+    // País -&gt; apariencia. Las imágenes se cargan una sola vez, la primera vez que se piden.
+<span class="fc" id="L29">    private static final Map&lt;String, AparienciaPersonaje&gt; REGISTRO = new HashMap&lt;&gt;();</span>
+
+    static {
+        // Cada booleano dice hacia dónde mira la imagen ORIGINAL (true = derecha). No depende del jugador:
+<span class="fc" id="L33">        registrar(&quot;Corea del Sur&quot;, &quot;recursos/cabeza_corea.png&quot;, true, &quot;recursos/zapato_corea.png&quot;, false);</span>
+<span class="fc" id="L34">        registrar(&quot;Camerún&quot;, &quot;recursos/cabeza_camerun.png&quot;, true, &quot;recursos/zapato_camerun.png&quot;, true);</span>
+<span class="fc" id="L35">        registrar(&quot;Rusia&quot;, &quot;recursos/cabeza_rusia.png&quot;, true, &quot;recursos/zapato_rusia.png&quot;, false);</span>
+<span class="fc" id="L36">        registrar(&quot;Japón&quot;, &quot;recursos/cabeza_japon.png&quot;, true, &quot;recursos/zapato_japon.png&quot;, false);</span>
+<span class="fc" id="L37">        registrar(&quot;Estados Unidos&quot;, &quot;recursos/cabeza_estadosunidos.png&quot;, true, &quot;recursos/zapato_estadosunidos.png&quot;, true);</span>
+<span class="fc" id="L38">        registrar(&quot;Nigeria&quot;, &quot;recursos/cabeza_nigeria.png&quot;, true, &quot;recursos/zapato_nigeria.png&quot;, true);</span>
+<span class="fc" id="L39">    }</span>
+
+    private final Image cabeza, zapato;
+    private final boolean cabezaMiraDerecha, zapatoMiraDerecha;
+
+<span class="fc" id="L44">    private AparienciaPersonaje(Image cabeza, boolean cabezaMiraDerecha, Image zapato, boolean zapatoMiraDerecha) {</span>
+<span class="fc" id="L45">        this.cabeza = cabeza;</span>
+<span class="fc" id="L46">        this.zapato = zapato;</span>
+<span class="fc" id="L47">        this.cabezaMiraDerecha = cabezaMiraDerecha;</span>
+<span class="fc" id="L48">        this.zapatoMiraDerecha = zapatoMiraDerecha;</span>
+<span class="fc" id="L49">    }</span>
+
+    private static void registrar(String pais, String rutaCabeza, boolean cabezaDerecha, String rutaZapato, boolean zapatoDerecha) {
+<span class="fc" id="L52">        Image cabeza = EstiloGUI.cargarImagen(rutaCabeza);</span>
+<span class="fc" id="L53">        Image zapato = EstiloGUI.cargarImagen(rutaZapato);</span>
+        // Si falta alguna imagen, el país se dibuja con la figura básica en vez de fallar.
+<span class="pc bpc" id="L55" title="2 of 4 branches missed.">        if (cabeza != null &amp;&amp; zapato != null) {</span>
+<span class="fc" id="L56">            REGISTRO.put(pais, new AparienciaPersonaje(cabeza, cabezaDerecha, zapato, zapatoDerecha));</span>
+        }
+<span class="fc" id="L58">    }</span>
+
+    /** Apariencia del país, o null si no tiene imágenes. */
+    static AparienciaPersonaje de(String pais) {
+<span class="fc" id="L62">        return REGISTRO.get(pais);</span>
+    }
+
+    /**
+     * Dibuja cabeza y zapato dentro de la caja del personaje.
+     *
+     * @param x, y          esquina superior izquierda de la caja (posición del dominio)
+     * @param direccion     1 si mira a la derecha (jugador 1), -1 si mira a la izquierda (jugador 2)
+     * @param avancePatada  0 si no patea; de 0 a 1 mientras dura la patada
+     * @param atenuado      true para dibujarlo semitransparente (por ejemplo, aturdido)
+     */
+    void dibujar(Graphics2D g, int x, int y, int direccion, double avancePatada, boolean atenuado) {
+<span class="fc" id="L74">        Graphics2D d = (Graphics2D) g.create();</span>
+<span class="fc" id="L75">        d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (atenuado) d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .45f));</span>
+
+<span class="fc" id="L78">        dibujarZapato(d, x, y, direccion, avancePatada);</span>
+
+        // Cabeza centrada arriba; puede sobresalir un poco a los lados de la caja.
+<span class="fc" id="L81">        int cx = x + ANCHO / 2 - ANCHO_CABEZA / 2;</span>
+<span class="fc" id="L82">        dibujarOrientada(d, cabeza, cx, y, ANCHO_CABEZA, ALTO_CABEZA, cabezaMiraDerecha, direccion);</span>
+<span class="fc" id="L83">        d.dispose();</span>
+<span class="fc" id="L84">    }</span>
+
+    private void dibujarZapato(Graphics2D g, int x, int y, int direccion, double avance) {
+        // La patada sube la punta y la vuelve a bajar: el máximo es a mitad del movimiento.
+<span class="fc" id="L88">        double curva = Math.sin(avance * Math.PI);</span>
+        // Punto de giro: el talón, abajo y hacia atrás del centro de la caja.
+<span class="fc" id="L90">        double talonX = x + ANCHO / 2.0 - direccion * 8;</span>
+<span class="fc" id="L91">        double talonY = y + ALTO - 5;</span>
+
+<span class="fc" id="L93">        Graphics2D z = (Graphics2D) g.create();</span>
+<span class="fc" id="L94">        z.translate(talonX + direccion * curva * AVANCE_PATADA, talonY);  // el pie avanza al patear</span>
+<span class="fc" id="L95">        z.rotate(-direccion * curva * ANGULO_PATADA);           // y la punta sube hacia adelante</span>
+        // Coordenadas relativas al talón: el zapato se extiende hacia adelante (direccion).
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        int zx = direccion &gt; 0 ? -8 : 8 - ANCHO_ZAPATO;</span>
+<span class="fc" id="L98">        dibujarOrientada(z, zapato, zx, -ALTO_ZAPATO + 5, ANCHO_ZAPATO, ALTO_ZAPATO, zapatoMiraDerecha, direccion);</span>
+<span class="fc" id="L99">        z.dispose();</span>
+<span class="fc" id="L100">    }</span>
+
+    /** Dibuja la imagen volteándola horizontalmente si mira al lado contrario de la dirección pedida. */
+    private static void dibujarOrientada(Graphics2D g, Image img, int x, int y, int w, int h, boolean miraDerecha, int direccion) {
+<span class="fc" id="L104">        int iw = img.getWidth(null), ih = img.getHeight(null);</span>
+<span class="fc bfc" id="L105" title="All 4 branches covered.">        boolean voltear = miraDerecha != (direccion &gt; 0);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (voltear) g.drawImage(img, x, y, x + w, y + h, iw, 0, 0, ih, null);</span>
+<span class="fc" id="L107">        else g.drawImage(img, x, y, x + w, y + h, 0, 0, iw, ih, null);</span>
+<span class="fc" id="L108">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

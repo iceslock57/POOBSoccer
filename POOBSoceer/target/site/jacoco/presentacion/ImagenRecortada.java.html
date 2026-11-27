@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ImagenRecortada.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">ImagenRecortada.java</span></div><h1>ImagenRecortada.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
+
+/**
+ * Una parte de una imagen de la carpeta recursos, lista para dibujarse en el partido.
+ * Al cargarla se queda solo con la parte que interesa y la reduce, para que dibujarla
+ * sesenta veces por segundo no sea pesado.
+ *
+ * Las posiciones se escriben en píxeles de la imagen original, tal como se ven al abrirla,
+ * y esta clase se encarga de llevarlas al lugar donde queda dibujada.
+ */
+final class ImagenRecortada {
+
+    private final BufferedImage imagen;
+    private final Rectangle zona;
+
+<span class="fc" id="L26">    private ImagenRecortada(BufferedImage imagen, Rectangle zona) {</span>
+<span class="fc" id="L27">        this.imagen = imagen;</span>
+<span class="fc" id="L28">        this.zona = zona;</span>
+<span class="fc" id="L29">    }</span>
+
+    /**
+     * @param ruta        archivo de la imagen
+     * @param zona        parte de la imagen original que se va a usar
+     * @param anchoMaximo ancho con el que se guarda; si la zona es más ancha se reduce
+     * @return la imagen lista, o null si el archivo no existe o no se puede leer
+     */
+    static ImagenRecortada cargar(String ruta, Rectangle zona, int anchoMaximo) {
+        try {
+<span class="fc" id="L39">            File archivo = new File(ruta);</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">            if (!archivo.isFile()) return null;</span>
+<span class="fc" id="L41">            BufferedImage original = ImageIO.read(archivo);</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">            if (original == null) return null;</span>
+
+<span class="fc" id="L44">            Rectangle dentro = zona.intersection(new Rectangle(original.getWidth(), original.getHeight()));</span>
+<span class="fc" id="L45">            double escala = Math.min(1, anchoMaximo / (double) dentro.width);</span>
+<span class="fc" id="L46">            int w = Math.max(1, (int) Math.round(dentro.width * escala));</span>
+<span class="fc" id="L47">            int h = Math.max(1, (int) Math.round(dentro.height * escala));</span>
+
+<span class="fc" id="L49">            BufferedImage reducida = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);</span>
+<span class="fc" id="L50">            Graphics2D g = reducida.createGraphics();</span>
+<span class="fc" id="L51">            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);</span>
+<span class="fc" id="L52">            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);</span>
+<span class="fc" id="L53">            Image parte = original.getSubimage(dentro.x, dentro.y, dentro.width, dentro.height)</span>
+<span class="fc" id="L54">                    .getScaledInstance(w, h, Image.SCALE_SMOOTH);</span>
+<span class="fc" id="L55">            g.drawImage(parte, 0, 0, null);</span>
+<span class="fc" id="L56">            g.dispose();</span>
+<span class="fc" id="L57">            return new ImagenRecortada(reducida, dentro);</span>
+<span class="nc" id="L58">        } catch (IOException | RuntimeException e) {</span>
+<span class="nc" id="L59">            return null;</span>
+        }
+    }
+
+    /** Proporción entre el alto y el ancho de la parte usada, para dibujarla sin deformarla. */
+    double altoPorAncho() {
+<span class="fc" id="L65">        return zona.height / (double) zona.width;</span>
+    }
+
+    /** Dibuja la imagen ocupando el rectángulo indicado; si voltear es true se ve como en un espejo. */
+    void dibujar(Graphics2D g, Rectangle2D destino, boolean voltear) {
+<span class="fc" id="L70">        Graphics2D d = (Graphics2D) g.create();</span>
+<span class="fc" id="L71">        d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);</span>
+<span class="fc" id="L72">        d.translate(destino.getX(), destino.getY());</span>
+<span class="fc" id="L73">        d.scale(destino.getWidth() / imagen.getWidth(), destino.getHeight() / imagen.getHeight());</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (voltear) {</span>
+<span class="fc" id="L75">            d.translate(imagen.getWidth(), 0);</span>
+<span class="fc" id="L76">            d.scale(-1, 1);</span>
+        }
+<span class="fc" id="L78">        d.drawImage(imagen, 0, 0, null);</span>
+<span class="fc" id="L79">        d.dispose();</span>
+<span class="fc" id="L80">    }</span>
+
+    /**
+     * Dice dónde queda una parte de la imagen original cuando la imagen se dibuja en destino.
+     * Sirve para escribir los números justo dentro de las cajas y barras que trae el dibujo.
+     */
+    Rectangle2D ubicar(Rectangle parte, Rectangle2D destino) {
+<span class="fc" id="L87">        double sx = destino.getWidth() / zona.width, sy = destino.getHeight() / zona.height;</span>
+<span class="fc" id="L88">        return new Rectangle2D.Double(destino.getX() + (parte.x - zona.x) * sx, destino.getY() + (parte.y - zona.y) * sy,</span>
+                parte.width * sx, parte.height * sy);
+    }
+
+    /**
+     * Calcula dónde dibujar la imagen para que una parte de ella caiga exactamente sobre un rectángulo
+     * del juego. Así los palos del arco coinciden con el lugar donde rebota el balón.
+     * Si la imagen se va a dibujar volteada, la parte también se mide en el espejo.
+     */
+    Rectangle2D ajustarA(Rectangle parte, Rectangle2D lugar, boolean voltear) {
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (voltear) parte = new Rectangle(2 * zona.x + zona.width - parte.x - parte.width, parte.y, parte.width, parte.height);</span>
+<span class="fc" id="L99">        double sx = lugar.getWidth() / parte.width, sy = lugar.getHeight() / parte.height;</span>
+<span class="fc" id="L100">        return new Rectangle2D.Double(lugar.getX() - (parte.x - zona.x) * sx, lugar.getY() - (parte.y - zona.y) * sy,</span>
+                zona.width * sx, zona.height * sy);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PanelCancha.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">PanelCancha.java</span></div><h1>PanelCancha.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import Domain.*;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+/** Renderiza la cancha, los países, el marcador, el tiempo y las barras de poder. */
+public class PanelCancha extends JPanel {
+
+    // Las imágenes del partido. Las posiciones están en píxeles de cada imagen original.
+    // Si falta alguna, esa parte se dibuja como antes, con figuras sencillas.
+
+    // Franja de pasto; su borde claro queda justo en el suelo del juego.
+<span class="fc" id="L18">    private static final ImagenRecortada CESPED = ImagenRecortada.cargar(&quot;recursos/cesped.png&quot;,</span>
+            new Rectangle(0, 896, 1536, 100), 1536);
+    private static final int CESPED_SOBRE_EL_SUELO = 8;
+
+    // El arco completo, y dentro de él lo que mide el arco del juego: desde el fondo de la red
+    // hasta el palo de adelante y desde la mitad del travesaño hasta el piso.
+<span class="fc" id="L24">    private static final ImagenRecortada ARCO = ImagenRecortada.cargar(&quot;recursos/arco.png&quot;,</span>
+            new Rectangle(40, 300, 910, 1015), 300);
+<span class="fc" id="L26">    private static final Rectangle ARCO_DEL_JUEGO = new Rectangle(60, 400, 800, 900);</span>
+
+    // Tablero con las dos cajas de los goles y el letrero de abajo.
+<span class="fc" id="L29">    private static final ImagenRecortada TABLERO = ImagenRecortada.cargar(&quot;recursos/tablero.png&quot;,</span>
+            new Rectangle(8, 204, 1517, 601), 760);
+<span class="fc" id="L31">    private static final Rectangle GOLES_J1 = new Rectangle(230, 302, 472, 279);</span>
+<span class="fc" id="L32">    private static final Rectangle GOLES_J2 = new Rectangle(833, 302, 474, 279);</span>
+<span class="fc" id="L33">    private static final Rectangle LETRERO = new Rectangle(185, 633, 1166, 117);</span>
+
+    // Panel de cada jugador con las barras de vida y de poder.
+<span class="fc" id="L36">    private static final ImagenRecortada INFO = ImagenRecortada.cargar(&quot;recursos/info.png&quot;,</span>
+            new Rectangle(12, 304, 1509, 393), 760);
+<span class="fc" id="L38">    private static final Rectangle BARRA_VIDA = new Rectangle(498, 409, 857, 77);</span>
+<span class="fc" id="L39">    private static final Rectangle BARRA_PODER = new Rectangle(500, 541, 863, 81);</span>
+
+<span class="fc" id="L41">    private static final Color AZUL = new Color(35, 105, 225), ROJO = new Color(220, 65, 65);</span>
+
+    private final POOBSoccer dominio;
+
+<span class="fc" id="L45">    public PanelCancha(POOBSoccer d) {</span>
+<span class="fc" id="L46">        dominio = d;</span>
+<span class="fc" id="L47">        setPreferredSize(new Dimension(1000, 650));</span>
+<span class="fc" id="L48">        setBackground(new Color(115, 190, 235));</span>
+<span class="fc" id="L49">    }</span>
+
+    @Override
+    protected void paintComponent(Graphics g) {
+<span class="fc" id="L53">        super.paintComponent(g);</span>
+
+<span class="fc" id="L55">        Partido p = dominio.getPartidoActual();</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (p == null) return;</span>
+
+<span class="fc" id="L58">        Graphics2D x = (Graphics2D) g.create();</span>
+
+<span class="fc" id="L60">        double sx = getWidth() / (double) p.getCancha().getAncho();</span>
+<span class="fc" id="L61">        double sy = getHeight() / (double) p.getCancha().getAlto();</span>
+
+<span class="fc" id="L63">        x.scale(sx, sy);</span>
+
+<span class="fc" id="L65">        dibujarCancha(x, p);</span>
+<span class="fc" id="L66">        dibujarJugador(x, p.getJugador1(), AZUL, 1);</span>
+<span class="fc" id="L67">        dibujarJugador(x, p.getJugador2(), ROJO, -1);</span>
+<span class="fc" id="L68">        dibujarBalones(x, p);</span>
+        // Los arcos van encima, así el balón que entra se ve detrás de la red.
+<span class="fc" id="L70">        dibujarArcos(x, p);</span>
+<span class="fc" id="L71">        dibujarHUD(x, p);</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (dominio.isPausa()) {</span>
+<span class="fc" id="L74">            x.setColor(new Color(0, 0, 0, 150));</span>
+<span class="fc" id="L75">            x.fillRect(0, 0, p.getCancha().getAncho(), p.getCancha().getAlto());</span>
+
+<span class="fc" id="L77">            x.setColor(Color.WHITE);</span>
+<span class="fc" id="L78">            x.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 44));</span>
+<span class="fc" id="L79">            x.drawString(</span>
+                &quot;EN PAUSA&quot;,
+<span class="fc" id="L81">                p.getCancha().getAncho() / 2 - 115,</span>
+<span class="fc" id="L82">                p.getCancha().getAlto() / 2</span>
+            );
+        }
+
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        if (p.isTerminado()) {</span>
+<span class="fc" id="L87">            x.setColor(new Color(0, 0, 0, 180));</span>
+<span class="fc" id="L88">            x.fillRoundRect(</span>
+<span class="fc" id="L89">                p.getCancha().getAncho() / 2 - 230,</span>
+<span class="fc" id="L90">                p.getCancha().getAlto() / 2 - 65,</span>
+                460,
+                130,
+                25,
+                25
+            );
+
+<span class="fc" id="L97">            x.setColor(Color.WHITE);</span>
+<span class="fc" id="L98">            x.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 30));</span>
+
+<span class="fc" id="L100">            Jugador win = p.getGanador();</span>
+
+<span class="fc" id="L102">            x.drawString(</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">                win == null ? &quot;EMPATE&quot; : &quot;GANADOR: &quot; + win.getPersonaje().getPais(),</span>
+<span class="fc" id="L104">                p.getCancha().getAncho() / 2 - 195,</span>
+<span class="fc" id="L105">                p.getCancha().getAlto() / 2</span>
+            );
+
+<span class="fc" id="L108">            x.setFont(new Font(&quot;Arial&quot;, Font.PLAIN, 18));</span>
+
+<span class="fc" id="L110">            x.drawString(</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">                &quot;Puntos obtenidos: &quot; + (win == null ? 25 : 100),</span>
+<span class="fc" id="L112">                p.getCancha().getAncho() / 2 - 100,</span>
+<span class="fc" id="L113">                p.getCancha().getAlto() / 2 + 35</span>
+            );
+        }
+
+<span class="fc" id="L117">        x.dispose();</span>
+<span class="fc" id="L118">    }</span>
+
+    private void dibujarCancha(Graphics2D g, Partido p) {
+<span class="fc" id="L121">        int w = p.getCancha().getAncho();</span>
+<span class="fc" id="L122">        int h = p.getCancha().getAlto();</span>
+<span class="fc" id="L123">        int floor = p.getCancha().getSuelo();</span>
+
+<span class="fc" id="L125">        g.setPaint(new GradientPaint(</span>
+            0, 0,
+            new Color(115, 190, 235),
+            0, floor,
+            new Color(210, 235, 250)
+        ));
+
+        // El fondo es solo el cielo; las líneas de la cancha ya no se dibujan.
+<span class="fc" id="L133">        g.fillRect(0, 0, w, h);</span>
+
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (CESPED != null) {</span>
+            // Debajo va un verde oscuro por si la imagen deja algún hueco.
+<span class="fc" id="L137">            g.setColor(new Color(3, 66, 29));</span>
+<span class="fc" id="L138">            g.fillRect(0, floor, w, h - floor);</span>
+<span class="fc" id="L139">            CESPED.dibujar(g, new Rectangle2D.Double(0, floor - CESPED_SOBRE_EL_SUELO, w,</span>
+                    h - floor + CESPED_SOBRE_EL_SUELO), false);
+        } else {
+<span class="nc" id="L142">            g.setColor(new Color(30, 145, 65));</span>
+<span class="nc" id="L143">            g.fillRect(0, floor, w, h - floor);</span>
+        }
+<span class="fc" id="L145">    }</span>
+
+    /**
+     * Dibuja cada arco con su imagen, estirada para que el travesaño, el palo de adelante y el piso
+     * caigan justo donde el balón rebota o entra. El arco derecho es el mismo dibujo en espejo.
+     */
+    private void dibujarArcos(Graphics2D g, Partido p) {
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (Arco a : new Arco[]{p.getCancha().getArcoIzquierdo(), p.getCancha().getArcoDerecho()}) {</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">            if (ARCO == null) {</span>
+<span class="nc" id="L154">                g.setColor(Color.WHITE);</span>
+<span class="nc" id="L155">                g.setStroke(new BasicStroke(7));</span>
+<span class="nc" id="L156">                g.drawRect(a.getPosX(), a.getPosY(), a.getAncho(), a.getAlto());</span>
+<span class="nc" id="L157">                continue;</span>
+            }
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            boolean voltear = !a.isEsArcoIzquierdo();</span>
+<span class="fc" id="L160">            Rectangle2D lugar = new Rectangle2D.Double(a.getPosX(), a.getPosY(), a.getAncho(), a.getAlto());</span>
+<span class="fc" id="L161">            ARCO.dibujar(g, ARCO.ajustarA(ARCO_DEL_JUEGO, lugar, voltear), voltear);</span>
+        }
+<span class="fc" id="L163">    }</span>
+
+    /**
+     * @param direccion 1 si el jugador mira a la derecha (jugador 1), -1 si mira a la izquierda (jugador 2)
+     */
+    private void dibujarJugador(Graphics2D g, Jugador j, Color color, int direccion) {
+<span class="fc" id="L169">        Personaje p = j.getPersonaje();</span>
+
+<span class="fc" id="L171">        int x = (int) p.getPosX();</span>
+<span class="fc" id="L172">        int y = (int) p.getPosY();</span>
+
+        // El aura va detrás del personaje para no taparlo.
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        if (j.tienePoderPreparado()) EfectosPoder.dibujarAura(g, p, x, y);</span>
+
+<span class="fc" id="L177">        AparienciaPersonaje apariencia = AparienciaPersonaje.de(p.getPais());</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        if (apariencia != null) {</span>
+            // De 0 a 1 mientras dura la patada; 0 si no está pateando.
+<span class="fc" id="L180">            double avancePatada = 1 - p.getFramesPateando() / (double) Personaje.DURACION_PATADA;</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            if (!p.isPateando()) avancePatada = 0;</span>
+<span class="pc bpc" id="L182" title="1 of 4 branches missed.">            apariencia.dibujar(g, x, y, direccion, avancePatada, p.isAturdido() || p.isInconsciente());</span>
+<span class="fc" id="L183">        } else {</span>
+<span class="fc" id="L184">            dibujarFiguraBasica(g, p, x, y, color);</span>
+        }
+
+<span class="fc" id="L187">        dibujarIndicadores(g, p, x, y);</span>
+<span class="fc" id="L188">    }</span>
+
+    /** Figura de los países que todavía no tienen imágenes: rectángulo de color con ojos. */
+    private void dibujarFiguraBasica(Graphics2D g, Personaje p, int x, int y, Color color) {
+<span class="pc bpc" id="L192" title="1 of 4 branches missed.">        g.setColor(p.isAturdido() || p.isInconsciente() ? Color.GRAY : color);</span>
+<span class="fc" id="L193">        int w = Personaje.ANCHO, h = Personaje.ALTO;</span>
+<span class="fc" id="L194">        g.fillRoundRect(x, y, w, h, 20, 20);</span>
+
+        // Ojos en proporción al tamaño de la caja.
+<span class="fc" id="L197">        int ojo = w / 5;</span>
+<span class="fc" id="L198">        g.setColor(Color.WHITE);</span>
+<span class="fc" id="L199">        g.fillOval(x + w / 5, y + h / 6, ojo, ojo);</span>
+<span class="fc" id="L200">        g.fillOval(x + w * 3 / 5, y + h / 6, ojo, ojo);</span>
+<span class="fc" id="L201">    }</span>
+
+    /** Nombre del país y los efectos que esté sufriendo el personaje. */
+    private void dibujarIndicadores(Graphics2D g, Personaje p, int x, int y) {
+<span class="fc" id="L205">        g.setColor(Color.BLACK);</span>
+<span class="fc" id="L206">        g.drawString(p.getPais(), Math.max(2, x - 10), y - 10);</span>
+
+<span class="fc" id="L208">        EfectosPoder.dibujarEfectoSobre(g, p, x, y);</span>
+
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        if (p.isAturdido()) {</span>
+<span class="fc" id="L211">            g.setColor(Color.WHITE);</span>
+<span class="fc" id="L212">            g.drawString(&quot;STUN&quot;, x, y - 22);</span>
+        }
+<span class="fc" id="L214">    }</span>
+
+    /**
+     * Dibuja el balón real y los falsos de la misma manera. Primero van los efectos y luego los balones
+     * ordenados por su altura, para que el real no se reconozca por quedar siempre encima o debajo.
+     */
+    private void dibujarBalones(Graphics2D g, Partido p) {
+<span class="fc" id="L221">        List&lt;Balon&gt; balones = new ArrayList&lt;&gt;(p.getBalonesFalsos());</span>
+<span class="fc" id="L222">        balones.add(p.getBalon());</span>
+<span class="fc" id="L223">        balones.sort(Comparator.comparingDouble(Balon::getPosY));</span>
+
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        for (Balon b : balones) {</span>
+<span class="fc" id="L226">            Poder poder = p.getPoderVisible(b);</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">            if (poder != null) EfectosPoder.dibujarTiro(g, b, poder);</span>
+<span class="fc" id="L228">        }</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        for (Balon b : balones) dibujarBalon(g, b);</span>
+<span class="fc" id="L230">    }</span>
+
+    private void dibujarBalon(Graphics2D g, Balon b) {
+<span class="fc" id="L233">        int r = b.getRadio();</span>
+<span class="fc" id="L234">        int x = (int) b.getPosX();</span>
+<span class="fc" id="L235">        int y = (int) b.getPosY();</span>
+
+<span class="fc" id="L237">        g.setColor(Color.WHITE);</span>
+<span class="fc" id="L238">        g.fillOval(x - r, y - r, r * 2, r * 2);</span>
+
+<span class="fc" id="L240">        g.setColor(Color.BLACK);</span>
+<span class="fc" id="L241">        g.setStroke(new BasicStroke(2));</span>
+<span class="fc" id="L242">        g.drawOval(x - r, y - r, r * 2, r * 2);</span>
+<span class="fc" id="L243">    }</span>
+
+    /**
+     * Arriba van el tablero en el centro y el panel de cada jugador a su lado.
+     * Los tres tienen el mismo ancho y se achican si la cancha es angosta.
+     */
+    private void dibujarHUD(Graphics2D g, Partido p) {
+<span class="pc bpc" id="L250" title="2 of 4 branches missed.">        if (TABLERO == null || INFO == null) {</span>
+<span class="nc" id="L251">            dibujarHUDSencillo(g, p);</span>
+<span class="nc" id="L252">            return;</span>
+        }
+<span class="fc" id="L254">        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);</span>
+<span class="fc" id="L255">        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);</span>
+
+<span class="fc" id="L257">        int w = p.getCancha().getAncho();</span>
+<span class="fc" id="L258">        double ancho = Math.min(300, (w - 60) / 3.0), altoInfo = ancho * INFO.altoPorAncho();</span>
+
+<span class="fc" id="L260">        dibujarTablero(g, p, new Rectangle2D.Double((w - ancho) / 2, 4, ancho, ancho * TABLERO.altoPorAncho()));</span>
+<span class="fc" id="L261">        dibujarInfo(g, p.getJugador1(), new Rectangle2D.Double(10, 8, ancho, altoInfo), AZUL, false);</span>
+<span class="fc" id="L262">        dibujarInfo(g, p.getJugador2(), new Rectangle2D.Double(w - 10 - ancho, 8, ancho, altoInfo), ROJO, true);</span>
+<span class="fc" id="L263">    }</span>
+
+    /** Los goles de cada uno en su caja y, en el letrero de abajo, el tiempo, la meta de goles o el gol de oro. */
+    private void dibujarTablero(Graphics2D g, Partido p, Rectangle2D lugar) {
+<span class="fc" id="L267">        TABLERO.dibujar(g, lugar, false);</span>
+
+<span class="fc" id="L269">        Rectangle2D caja1 = TABLERO.ubicar(GOLES_J1, lugar), caja2 = TABLERO.ubicar(GOLES_J2, lugar);</span>
+<span class="fc" id="L270">        escribirCentrado(g, String.valueOf(p.getMarcador()[0]), caja1, new Color(125, 190, 255), caja1.getHeight() * .85);</span>
+<span class="fc" id="L271">        escribirCentrado(g, String.valueOf(p.getMarcador()[1]), caja2, new Color(255, 135, 135), caja2.getHeight() * .85);</span>
+
+<span class="fc" id="L273">        Rectangle2D letrero = TABLERO.ubicar(LETRERO, lugar);</span>
+<span class="fc" id="L274">        Color color = Color.WHITE;</span>
+<span class="fc" id="L275">        String texto = &quot;&quot;;</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">        if (p instanceof PartidoPorTiempo) {</span>
+<span class="fc" id="L277">            PartidoPorTiempo t = (PartidoPorTiempo) p;</span>
+            // Cuando llega el gol de oro ya no hay reloj: se gana con el siguiente gol.
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            if (t.isEsGolDeOro()) {</span>
+<span class="fc" id="L280">                texto = &quot;¡GOL DE ORO!&quot;;</span>
+<span class="fc" id="L281">                color = new Color(255, 200, 40);</span>
+            } else {
+<span class="fc" id="L283">                texto = &quot;TIEMPO  &quot; + formato(t.getTiempoRestante());</span>
+                // En los últimos segundos el reloj se pone rojo.
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">                if (t.estaPorTerminar()) color = new Color(255, 110, 90);</span>
+            }
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">        } else if (p instanceof PartidoPorGoles) {</span>
+<span class="fc" id="L288">            int meta = ((PartidoPorGoles) p).getGolesObjetivo();</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">            texto = &quot;GANA QUIEN LLEGUE A &quot; + meta + (meta == 1 ? &quot; GOL&quot; : &quot; GOLES&quot;);</span>
+        }
+<span class="fc" id="L291">        escribirCentrado(g, texto, letrero, color, letrero.getHeight() * .72);</span>
+<span class="fc" id="L292">    }</span>
+
+    /**
+     * Panel de un jugador. Dentro de cada barra se escribe su valor: la vida que le queda
+     * y cuánto lleva cargado el poder. Debajo va el nombre con el color de su equipo.
+     */
+    private void dibujarInfo(Graphics2D g, Jugador j, Rectangle2D lugar, Color equipo, boolean alaDerecha) {
+<span class="fc" id="L299">        INFO.dibujar(g, lugar, false);</span>
+<span class="fc" id="L300">        Personaje p = j.getPersonaje();</span>
+
+<span class="fc" id="L302">        double vida = p.getVidaActual() / (double) p.getVidaMaxima();</span>
+<span class="fc" id="L303">        Rectangle2D barraVida = INFO.ubicar(BARRA_VIDA, lugar);</span>
+<span class="fc" id="L304">        llenarBarra(g, barraVida, vida, colorDeVida(vida));</span>
+<span class="fc" id="L305">        escribirCentrado(g, p.getVidaActual() + &quot; / &quot; + p.getVidaMaxima(), barraVida, Color.WHITE, barraVida.getHeight() * .8);</span>
+
+<span class="fc" id="L307">        Rectangle2D barraPoder = INFO.ubicar(BARRA_PODER, lugar);</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        if (j.tienePoderPreparado()) {</span>
+<span class="fc" id="L309">            llenarBarra(g, barraPoder, 1, new Color(215, 75, 255));</span>
+<span class="fc" id="L310">            escribirCentrado(g, &quot;¡PODER LISTO!&quot;, barraPoder, Color.WHITE, barraPoder.getHeight() * .8);</span>
+        } else {
+<span class="fc" id="L312">            llenarBarra(g, barraPoder, j.getBarraPoder() / 100.0, new Color(255, 170, 30));</span>
+<span class="fc" id="L313">            escribirCentrado(g, j.getBarraPoder() + &quot; %&quot;, barraPoder, Color.WHITE, barraPoder.getHeight() * .8);</span>
+        }
+
+<span class="fc" id="L316">        dibujarNombre(g, j.getNombreVisible(), lugar, equipo, alaDerecha);</span>
+<span class="fc" id="L317">    }</span>
+
+    /** Verde con buena vida, amarillo a media vida y rojo cuando ya casi no le queda. */
+    private static Color colorDeVida(double vida) {
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        if (vida &gt; .5) return new Color(45, 215, 95);</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">        if (vida &gt; .25) return new Color(245, 200, 40);</span>
+<span class="nc" id="L323">        return new Color(235, 65, 50);</span>
+    }
+
+    /** Llena la parte de la barra que corresponde al valor, con un brillo arriba para que se vea con volumen. */
+    private static void llenarBarra(Graphics2D g, Rectangle2D barra, double valor, Color color) {
+<span class="fc" id="L328">        double lleno = barra.getWidth() * Math.max(0, Math.min(1, valor));</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">        if (lleno &lt;= 0) return;</span>
+<span class="fc" id="L330">        double y = barra.getY(), h = barra.getHeight();</span>
+<span class="fc" id="L331">        Graphics2D d = (Graphics2D) g.create();</span>
+<span class="fc" id="L332">        d.setPaint(new GradientPaint(0, (float) y, color.brighter(), 0, (float) (y + h), color.darker()));</span>
+<span class="fc" id="L333">        d.fill(new java.awt.geom.RoundRectangle2D.Double(barra.getX(), y, lleno, h, h, h));</span>
+<span class="fc" id="L334">        d.dispose();</span>
+<span class="fc" id="L335">    }</span>
+
+    /** Nombre del jugador en una etiqueta oscura bajo su panel, pegada al lado de la pantalla que le toca. */
+    private static void dibujarNombre(Graphics2D g, String nombre, Rectangle2D panel, Color equipo, boolean alaDerecha) {
+<span class="fc" id="L339">        Font letra = new Font(&quot;Arial&quot;, Font.BOLD, 14);</span>
+<span class="fc" id="L340">        int ancho = g.getFontMetrics(letra).stringWidth(nombre) + 22;</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">        double x = alaDerecha ? panel.getMaxX() - ancho - 8 : panel.getX() + 8, y = panel.getMaxY() + 3;</span>
+
+<span class="fc" id="L343">        g.setColor(new Color(4, 14, 55, 215));</span>
+<span class="fc" id="L344">        g.fill(new java.awt.geom.RoundRectangle2D.Double(x, y, ancho, 20, 10, 10));</span>
+<span class="fc" id="L345">        g.setColor(equipo);</span>
+<span class="fc" id="L346">        g.fill(new java.awt.geom.RoundRectangle2D.Double(x, y, 7, 20, 7, 7));</span>
+<span class="fc" id="L347">        g.setFont(letra);</span>
+<span class="fc" id="L348">        g.setColor(Color.WHITE);</span>
+<span class="fc" id="L349">        g.drawString(nombre, (float) (x + 13), (float) (y + 15));</span>
+<span class="fc" id="L350">    }</span>
+
+    /**
+     * Escribe un texto centrado en una caja, con una sombra para que se lea sobre cualquier fondo.
+     * Si no cabe a lo ancho, la letra se achica.
+     */
+    private static void escribirCentrado(Graphics2D g, String texto, Rectangle2D caja, Color color, double tamano) {
+<span class="fc" id="L357">        Font letra = new Font(&quot;Arial&quot;, Font.BOLD, 12).deriveFont((float) tamano);</span>
+<span class="fc" id="L358">        FontMetrics medidas = g.getFontMetrics(letra);</span>
+<span class="fc" id="L359">        double cabe = caja.getWidth() * .9;</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">        if (medidas.stringWidth(texto) &gt; cabe) {</span>
+<span class="fc" id="L361">            letra = letra.deriveFont((float) (tamano * cabe / medidas.stringWidth(texto)));</span>
+<span class="fc" id="L362">            medidas = g.getFontMetrics(letra);</span>
+        }
+<span class="fc" id="L364">        float x = (float) (caja.getCenterX() - medidas.stringWidth(texto) / 2.0);</span>
+<span class="fc" id="L365">        float y = (float) (caja.getCenterY() + (medidas.getAscent() - medidas.getDescent()) / 2.0);</span>
+
+<span class="fc" id="L367">        g.setFont(letra);</span>
+<span class="fc" id="L368">        g.setColor(new Color(0, 0, 0, 170));</span>
+<span class="fc" id="L369">        g.drawString(texto, x + 1.5f, y + 1.5f);</span>
+<span class="fc" id="L370">        g.setColor(color);</span>
+<span class="fc" id="L371">        g.drawString(texto, x, y);</span>
+<span class="fc" id="L372">    }</span>
+
+    /** El marcador de antes, con texto y barras simples; se usa si faltan las imágenes del tablero. */
+    private void dibujarHUDSencillo(Graphics2D g, Partido p) {
+<span class="nc" id="L376">        int w = p.getCancha().getAncho();</span>
+
+<span class="nc" id="L378">        g.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 24));</span>
+<span class="nc" id="L379">        g.setColor(Color.BLACK);</span>
+<span class="nc" id="L380">        g.drawString(</span>
+<span class="nc" id="L381">            p.getMarcador()[0] + &quot;  -  &quot; + p.getMarcador()[1],</span>
+            w / 2 - 40,
+            35
+        );
+
+<span class="nc" id="L386">        g.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 15));</span>
+
+<span class="nc" id="L388">        dibujarJugadorHUD(g, p.getJugador1(), 25, 25, Color.BLUE);</span>
+<span class="nc" id="L389">        dibujarJugadorHUD(g, p.getJugador2(), w - 225, 25, Color.RED);</span>
+
+<span class="nc bnc" id="L391" title="All 2 branches missed.">        if (p instanceof PartidoPorTiempo) {</span>
+<span class="nc" id="L392">            PartidoPorTiempo t = (PartidoPorTiempo) p;</span>
+
+<span class="nc" id="L394">            g.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 17));</span>
+
+<span class="nc" id="L396">            String reloj = &quot;Tiempo: &quot; + formato(t.getTiempoRestante());</span>
+<span class="nc" id="L397">            g.drawString(reloj, w / 2 - 55, 62);</span>
+
+<span class="nc bnc" id="L399" title="All 2 branches missed.">            if (t.isEsGolDeOro()) {</span>
+<span class="nc" id="L400">                g.setColor(new Color(180, 20, 20));</span>
+<span class="nc" id="L401">                g.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 22));</span>
+<span class="nc" id="L402">                g.drawString(&quot;¡GOL DE ORO!&quot;, w / 2 - 75, 91);</span>
+            }
+        }
+<span class="nc" id="L405">    }</span>
+
+    private String formato(int s) {
+<span class="fc" id="L408">        return String.format(&quot;%02d:%02d&quot;, s / 60, s % 60);</span>
+    }
+
+    private void dibujarJugadorHUD(Graphics2D g, Jugador j, int x, int y, Color color) {
+<span class="nc" id="L412">        g.setColor(Color.DARK_GRAY);</span>
+<span class="nc" id="L413">        g.drawString(j.getNombreVisible(), x, y);</span>
+
+<span class="nc" id="L415">        g.setColor(new Color(70, 70, 70));</span>
+<span class="nc" id="L416">        g.fillRect(x, y + 8, 190, 13);</span>
+
+<span class="nc" id="L418">        g.setColor(color);</span>
+<span class="nc" id="L419">        g.fillRect(</span>
+            x,
+            y + 8,
+<span class="nc" id="L422">            (int) (190 * j.getPersonaje().getVidaActual()</span>
+<span class="nc" id="L423">            / (double) j.getPersonaje().getVidaMaxima()),</span>
+            13
+        );
+
+<span class="nc" id="L427">        g.setColor(Color.DARK_GRAY);</span>
+<span class="nc" id="L428">        g.drawString(</span>
+<span class="nc" id="L429">            &quot;HP &quot; + j.getPersonaje().getVidaActual() + &quot;   Poder&quot;,</span>
+            x,
+            y + 39
+        );
+
+<span class="nc" id="L434">        g.setColor(Color.GRAY);</span>
+<span class="nc" id="L435">        g.fillRect(x, y + 44, 190, 10);</span>
+
+<span class="nc" id="L437">        g.setColor(Color.ORANGE);</span>
+<span class="nc" id="L438">        g.fillRect(</span>
+            x,
+            y + 44,
+<span class="nc" id="L441">            (int) (190 * j.getBarraPoder() / 100.0),</span>
+            10
+        );
+
+<span class="nc bnc" id="L445" title="All 2 branches missed.">        if (j.tienePoderPreparado()) {</span>
+<span class="nc" id="L446">            g.setColor(Color.MAGENTA);</span>
+<span class="nc" id="L447">            g.drawString(&quot;PODER LISTO&quot;, x, y + 72);</span>
+        }
+<span class="nc" id="L449">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

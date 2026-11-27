@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>POOBSoccerGUI.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">POOBSoccerGUI.java</span></div><h1>POOBSoccerGUI.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import Domain.*;
+import persistencia.ArchivoPartida;
+import javax.swing.*;
+import java.awt.*;
+import java.io.File;
+
+/**
+ * Ventana del juego. El recorrido es: inicio, modo de juego, máquina (solo si se juega contra ella),
+ * tipo de partido, selección de países y partido. Desde la selección también se llega a las estadísticas
+ * y con el menú Archivo se guardan y se abren las partidas.
+ */
+public class POOBSoccerGUI extends JFrame {
+
+<span class="fc" id="L16">    private final POOBSoccer dominio = new POOBSoccer();</span>
+<span class="fc" id="L17">    private final CardLayout cards = new CardLayout();</span>
+<span class="fc" id="L18">    private final JPanel root = new JPanel(cards);</span>
+    private PantallaJuego pantallaJuego;
+    private Timer loop;
+<span class="fc" id="L21">    private String tipoPartido = &quot;Tiempo&quot;;</span>
+    // Perfil de la máquina elegida, o null si juegan dos personas.
+    private String perfilMaquina;
+<span class="fc" id="L24">    private int anchoCancha = 1000, altoCancha = 650;</span>
+    private PantallaSeleccion seleccion;
+    private final PantallaEstadisticas estadisticas;
+    private final ControladorTeclado teclado;
+    private final Dialogos dialogos;
+
+    public POOBSoccerGUI() {
+<span class="fc" id="L31">        this(new DialogosSwing());</span>
+<span class="fc" id="L32">    }</span>
+
+    /** Recibe los diálogos desde afuera para poder probar la ventana sin que se queden esperando al usuario. */
+    POOBSoccerGUI(Dialogos dialogos) {
+<span class="fc" id="L36">        super(&quot;DOPOSoccer&quot;);</span>
+<span class="fc" id="L37">        this.dialogos = dialogos;</span>
+<span class="fc" id="L38">        setJMenuBar(new MenuArchivo(this::guardarPartida, this::abrirPartida));</span>
+<span class="fc" id="L39">        setDefaultCloseOperation(EXIT_ON_CLOSE);</span>
+<span class="fc" id="L40">        setMinimumSize(new Dimension(760, 520));</span>
+<span class="fc" id="L41">        root.add(new PantallaInicio(() -&gt; cards.show(root, &quot;modalidad&quot;), this::dispose), &quot;inicio&quot;);</span>
+<span class="fc" id="L42">        root.add(new PantallaModalidad(() -&gt; elegirRival(null), () -&gt; cards.show(root, &quot;maquina&quot;),</span>
+<span class="fc" id="L43">                () -&gt; cards.show(root, &quot;inicio&quot;)), &quot;modalidad&quot;);</span>
+<span class="fc" id="L44">        root.add(new PantallaMaquina(this::elegirRival, () -&gt; cards.show(root, &quot;modalidad&quot;)), &quot;maquina&quot;);</span>
+<span class="fc" id="L45">        root.add(new PantallaTipos(this::elegirTipo, this::volverDeTipos), &quot;tipos&quot;);</span>
+<span class="fc" id="L46">        seleccion = new PantallaSeleccion(this::iniciarPartida, () -&gt; cards.show(root, &quot;tipos&quot;), this::verEstadisticas);</span>
+<span class="fc" id="L47">        root.add(seleccion, &quot;seleccion&quot;);</span>
+<span class="fc" id="L48">        estadisticas = new PantallaEstadisticas(() -&gt; cards.show(root, &quot;seleccion&quot;));</span>
+<span class="fc" id="L49">        root.add(estadisticas, &quot;estadisticas&quot;);</span>
+<span class="fc" id="L50">        setContentPane(root);</span>
+        // Tamaño inicial suficiente para que las tarjetas de los países se vean completas.
+<span class="fc" id="L52">        setSize(1000, 650);</span>
+<span class="fc" id="L53">        setLocationRelativeTo(null);</span>
+<span class="fc" id="L54">        teclado = new ControladorTeclado(dominio, root, this::repintarJuego);</span>
+        // Si la ventana pierde el foco (por ejemplo con Alt+Tab) no llega el &quot;soltar&quot; de las teclas;
+        // se olvidan para que ningún jugador siga moviéndose solo.
+<span class="fc" id="L57">        addWindowFocusListener(new java.awt.event.WindowAdapter() {</span>
+            @Override
+            public void windowLostFocus(java.awt.event.WindowEvent e) {
+<span class="nc" id="L60">                teclado.reiniciar();</span>
+<span class="nc" id="L61">            }</span>
+        });
+        // Bucle del juego: ~60 cuadros por segundo.
+<span class="fc" id="L64">        loop = new Timer(16, e -&gt; {</span>
+<span class="fc" id="L65">            Partido actual = dominio.getPartidoActual();</span>
+<span class="pc bpc" id="L66" title="2 of 6 branches missed.">            if (actual != null &amp;&amp; !dominio.isPausa() &amp;&amp; !actual.isTerminado()) {</span>
+<span class="fc" id="L67">                teclado.procesarTeclasContinuas();</span>
+<span class="fc" id="L68">                dominio.actualizar();</span>
+            }
+<span class="fc" id="L70">            repintarJuego();</span>
+<span class="fc" id="L71">        });</span>
+<span class="fc" id="L72">    }</span>
+
+    private void repintarJuego() {
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (pantallaJuego != null) pantallaJuego.repintar();</span>
+<span class="fc" id="L76">    }</span>
+
+    // Pantallas
+
+    /** Guarda contra quién se juega: null es otra persona y un perfil es la máquina. */
+    private void elegirRival(String perfil) {
+<span class="fc" id="L82">        perfilMaquina = perfil;</span>
+<span class="fc" id="L83">        seleccion.mostrarRival(perfil);</span>
+<span class="fc" id="L84">        cards.show(root, &quot;tipos&quot;);</span>
+<span class="fc" id="L85">    }</span>
+
+    private void volverDeTipos() {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        cards.show(root, perfilMaquina == null ? &quot;modalidad&quot; : &quot;maquina&quot;);</span>
+<span class="fc" id="L89">    }</span>
+
+    /** Se llama desde PantallaTipos con &quot;Tiempo&quot; o &quot;Goles&quot;. */
+    private void elegirTipo(String tipo) {
+<span class="fc" id="L93">        tipoPartido = tipo;</span>
+<span class="fc" id="L94">        seleccion.prepararPara(tipo);</span>
+<span class="fc" id="L95">        cards.show(root, &quot;seleccion&quot;);</span>
+<span class="fc" id="L96">    }</span>
+
+    /** Abre las estadísticas del país que ese jugador tiene elegido en este momento. */
+    private void verEstadisticas(int jugador) {
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        String pais = jugador == 1 ? seleccion.getPais1() : seleccion.getPais2();</span>
+<span class="fc" id="L101">        PerfilJugador perfil = dominio.getPerfil(jugador);</span>
+<span class="fc" id="L102">        estadisticas.mostrar(&quot;JUGADOR &quot; + jugador, perfil, pais);</span>
+<span class="fc" id="L103">        cards.show(root, &quot;estadisticas&quot;);</span>
+<span class="fc" id="L104">    }</span>
+
+    // Inicio del juego
+
+    /** Se llama desde PantallaSeleccion al presionar JUGAR. */
+    private void iniciarPartida() {
+<span class="fc" id="L110">        anchoCancha = seleccion.getAnchoCancha();</span>
+<span class="fc" id="L111">        altoCancha = seleccion.getAltoCancha();</span>
+<span class="fc" id="L112">        int objetivo = seleccion.getObjetivo();</span>
+        // El catálogo decide qué poder le toca a cada país y el perfil, sus estadísticas. La máquina juega sin mejoras.
+<span class="fc" id="L114">        Personaje p1 = CatalogoPersonajes.crear(seleccion.getPais1(), dominio.getPerfil(1));</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        Personaje p2 = CatalogoPersonajes.crear(seleccion.getPais2(), perfilMaquina == null ? dominio.getPerfil(2) : null);</span>
+        try {
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            String modalidad = perfilMaquina == null ? POOBSoccer.JUGADOR_VS_JUGADOR : POOBSoccer.JUGADOR_VS_MAQUINA;</span>
+<span class="fc" id="L118">            dominio.iniciarPartido(tipoPartido, modalidad, p1, p2, objetivo, anchoCancha, altoCancha, perfilMaquina);</span>
+<span class="fc" id="L119">            mostrarJuego();</span>
+<span class="nc" id="L120">        } catch (RuntimeException ex) {</span>
+<span class="nc" id="L121">            mostrarError(ex);</span>
+<span class="fc" id="L122">        }</span>
+<span class="fc" id="L123">    }</span>
+
+    // Archivos
+
+    /**
+     * Guarda el partido si hay uno en curso; si no, solo los puntos y las estadísticas.
+     * El juego se detiene mientras se elige el archivo y luego sigue como estaba.
+     */
+    private void guardarPartida(ArchivoPartida formato) {
+<span class="fc" id="L132">        boolean estabaEnPausa = dominio.isPausa();</span>
+<span class="fc" id="L133">        dominio.pausarJuego();</span>
+        try {
+<span class="fc" id="L135">            File archivo = dialogos.paraGuardar(this, formato);</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            if (archivo != null) {</span>
+<span class="fc" id="L137">                formato.guardar(dominio, archivo);</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">                String guardado = dominio.hayPartidoEnCurso() ? &quot;La partida se guardó en &quot; : &quot;Los puntos y las estadísticas se guardaron en &quot;;</span>
+<span class="fc" id="L139">                dialogos.informar(this, guardado + archivo.getName());</span>
+            }
+<span class="fc" id="L141">        } catch (ExcepcionJuego ex) {</span>
+<span class="fc" id="L142">            mostrarError(ex);</span>
+<span class="fc" id="L143">        }</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (!estabaEnPausa) dominio.reanudarJuego();</span>
+<span class="fc" id="L145">    }</span>
+
+    /** Si el archivo no sirve, se sigue con lo que se estaba jugando. */
+    private void abrirPartida(ArchivoPartida formato) {
+<span class="fc" id="L149">        boolean estabaEnPausa = dominio.isPausa();</span>
+<span class="fc" id="L150">        dominio.pausarJuego();</span>
+<span class="fc" id="L151">        File archivo = dialogos.paraAbrir(this, formato);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        if (archivo != null) {</span>
+            try {
+<span class="fc" id="L154">                formato.abrir(dominio, archivo);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">                if (dominio.hayPartidoEnCurso()) mostrarPartidaAbierta();</span>
+<span class="fc" id="L156">                else mostrarProgresoAbierto(archivo);</span>
+<span class="fc" id="L157">                return;</span>
+<span class="fc" id="L158">            } catch (ExcepcionJuego ex) {</span>
+<span class="fc" id="L159">                mostrarError(ex);</span>
+            }
+        }
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        if (!estabaEnPausa) dominio.reanudarJuego();</span>
+<span class="fc" id="L163">    }</span>
+
+    /** Deja la ventana como si ese partido se hubiera configurado a mano. Queda en pausa hasta que lo reanuden. */
+    private void mostrarPartidaAbierta() {
+<span class="fc" id="L167">        Partido partido = dominio.getPartidoActual();</span>
+<span class="fc" id="L168">        perfilMaquina = partido.getJugador2().getPerfilMaquina();</span>
+<span class="fc" id="L169">        tipoPartido = dominio.getTipoPartido();</span>
+<span class="fc" id="L170">        anchoCancha = partido.getCancha().getAncho();</span>
+<span class="fc" id="L171">        altoCancha = partido.getCancha().getAlto();</span>
+<span class="fc" id="L172">        seleccion.mostrarRival(perfilMaquina);</span>
+<span class="fc" id="L173">        seleccion.prepararPara(tipoPartido);</span>
+<span class="fc" id="L174">        mostrarJuego();</span>
+<span class="fc" id="L175">    }</span>
+
+    /** El archivo no traía partido: se retira la pantalla del que hubiera y se vuelve al inicio. */
+    private void mostrarProgresoAbierto(File archivo) {
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">        if (pantallaJuego != null) root.remove(pantallaJuego);</span>
+<span class="fc" id="L180">        pantallaJuego = null;</span>
+<span class="fc" id="L181">        volverAlMenu();</span>
+<span class="fc" id="L182">        dialogos.informar(this, &quot;Se recuperaron los puntos y las estadísticas de &quot; + archivo.getName());</span>
+<span class="fc" id="L183">    }</span>
+
+    /** El usuario ve un mensaje claro y el detalle queda en el registro para los programadores. */
+    private void mostrarError(RuntimeException error) {
+<span class="fc" id="L187">        RegistroErrores.registrar(error.getMessage(), error);</span>
+<span class="fc" id="L188">        dialogos.error(this, error.getMessage());</span>
+<span class="fc" id="L189">    }</span>
+
+    private void mostrarJuego() {
+<span class="fc" id="L192">        loop.stop();</span>
+<span class="fc" id="L193">        teclado.reiniciar();</span>
+        // Si ya había una partida anterior, se retira su pantalla antes de agregar la nueva.
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (pantallaJuego != null) root.remove(pantallaJuego);</span>
+<span class="fc" id="L196">        pantallaJuego = new PantallaJuego(dominio, this::volverAlMenu);</span>
+<span class="fc" id="L197">        root.add(pantallaJuego, &quot;juego&quot;);</span>
+<span class="fc" id="L198">        cards.show(root, &quot;juego&quot;);</span>
+<span class="fc" id="L199">        setSize(anchoCancha, altoCancha + 95 + getJMenuBar().getPreferredSize().height);</span>
+<span class="fc" id="L200">        setLocationRelativeTo(null);</span>
+<span class="fc" id="L201">        pantallaJuego.enfocar();</span>
+<span class="fc" id="L202">        loop.start();</span>
+<span class="fc" id="L203">    }</span>
+
+    /** Se llama desde PantallaJuego al presionar MENÚ. */
+    private void volverAlMenu() {
+<span class="fc" id="L207">        loop.stop();</span>
+<span class="fc" id="L208">        cards.show(root, &quot;inicio&quot;);</span>
+<span class="fc" id="L209">    }</span>
+
+    public static void main(String[] args) {
+<span class="nc" id="L212">        SwingUtilities.invokeLater(() -&gt; new POOBSoccerGUI().setVisible(true));</span>
+<span class="nc" id="L213">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

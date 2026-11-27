@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PartidoPorTiempo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">PartidoPorTiempo.java</span></div><h1>PartidoPorTiempo.java</h1><pre class="source lang-java linenums">package Domain;
+
+/** Partido cronometrado; si acaba empatado entra en gol de oro. */
+public class PartidoPorTiempo extends Partido {
+
+    private static final int SEGUNDOS_FINALES = 20;
+
+    private int tiempoRestante, contadorFrames;
+    private boolean esGolDeOro;
+
+    public PartidoPorTiempo(Jugador a, Jugador b) {
+<span class="fc" id="L12">        this(a, b, 2);</span>
+<span class="fc" id="L13">    }</span>
+
+    public PartidoPorTiempo(Jugador a, Jugador b, int minutos) {
+<span class="fc" id="L16">        super(a, b);</span>
+
+<span class="fc bfc" id="L18" title="All 2 branches covered.">        if (minutos &lt; 1) throw new IllegalArgumentException(&quot;La duración debe ser positiva&quot;);</span>
+
+<span class="fc" id="L20">        tiempoRestante = minutos * 60;</span>
+<span class="fc" id="L21">    }</span>
+
+    public PartidoPorTiempo(Jugador a, Jugador b, int minutos, int ancho, int alto) {
+<span class="fc" id="L24">        super(a, b, ancho, alto);</span>
+
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        if (minutos &lt; 1) throw new IllegalArgumentException(&quot;La duración debe ser positiva&quot;);</span>
+
+<span class="fc" id="L28">        tiempoRestante = minutos * 60;</span>
+<span class="fc" id="L29">    }</span>
+
+    @Override
+    public void actualizarEstado() {
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (terminado) return;</span>
+
+<span class="fc" id="L35">        super.actualizarEstado();</span>
+
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (terminado) return;</span>
+
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (!esGolDeOro) {</span>
+<span class="fc" id="L40">            contadorFrames++;</span>
+
+<span class="fc bfc" id="L42" title="All 2 branches covered.">            if (contadorFrames &gt;= 60) {</span>
+<span class="fc" id="L43">                contadorFrames = 0;</span>
+
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">                if (tiempoRestante &gt; 0) tiempoRestante--;</span>
+
+<span class="fc bfc" id="L47" title="All 4 branches covered.">                if (tiempoRestante == 0 &amp;&amp; marcador[0] == marcador[1]) {</span>
+<span class="fc" id="L48">                    esGolDeOro = true;</span>
+                }
+            }
+        }
+
+<span class="fc" id="L53">        finalizarSiCorresponde();</span>
+<span class="fc" id="L54">    }</span>
+
+    @Override
+    public boolean esFinDePartido() {
+<span class="pc bpc" id="L58" title="1 of 8 branches missed.">        return tiempoRestante &lt;= 0</span>
+            &amp;&amp; (!esGolDeOro ? marcador[0] != marcador[1] : marcador[0] != marcador[1]);
+    }
+
+    /** Quedan los últimos segundos o ya se está jugando el gol de oro. */
+    @Override
+    public boolean estaPorTerminar() {
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        return tiempoRestante &lt;= SEGUNDOS_FINALES;</span>
+    }
+
+    @Override
+    void guardar(EscritorPartida e) {
+<span class="fc" id="L70">        super.guardar(e);</span>
+<span class="fc" id="L71">        e.entero(tiempoRestante, 16);</span>
+<span class="fc" id="L72">        e.entero(contadorFrames, 8);</span>
+<span class="fc" id="L73">        e.logico(esGolDeOro);</span>
+<span class="fc" id="L74">    }</span>
+
+    @Override
+    void restaurar(LectorPartida l) {
+<span class="fc" id="L78">        super.restaurar(l);</span>
+<span class="fc" id="L79">        tiempoRestante = l.entero(16);</span>
+<span class="fc" id="L80">        contadorFrames = l.entero(8);</span>
+<span class="fc" id="L81">        esGolDeOro = l.logico();</span>
+<span class="fc" id="L82">    }</span>
+
+    public int getTiempoRestante() {
+<span class="fc" id="L85">        return tiempoRestante;</span>
+    }
+
+    public boolean isEsGolDeOro() {
+<span class="fc" id="L89">        return esGolDeOro;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

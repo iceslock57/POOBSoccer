@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PantallaMaquina.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">PantallaMaquina.java</span></div><h1>PantallaMaquina.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import Domain.CatalogoMaquinas;
+import javax.swing.*;
+import java.awt.*;
+import java.util.List;
+import java.util.function.Consumer;
+
+/** Pantalla para elegir el perfil de la máquina. La lista sale del catálogo, así que los perfiles nuevos aparecen solos. */
+class PantallaMaquina extends JPanel {
+
+    /**
+     * @param alElegirPerfil acción que recibe el nombre del perfil elegido
+     * @param alVolver       acción al presionar VOLVER
+     */
+    PantallaMaquina(Consumer&lt;String&gt; alElegirPerfil, Runnable alVolver) {
+<span class="fc" id="L17">        super(new BorderLayout());</span>
+<span class="fc" id="L18">        JPanel p = EstiloGUI.fondo();</span>
+<span class="fc" id="L19">        JPanel box = new JPanel();</span>
+<span class="fc" id="L20">        box.setOpaque(false);</span>
+<span class="fc" id="L21">        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));</span>
+
+<span class="fc" id="L23">        JLabel h = EstiloGUI.titulo(&quot;SELECCIONA LA MÁQUINA&quot;, 28);</span>
+<span class="fc" id="L24">        h.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="fc" id="L25">        box.add(h);</span>
+<span class="fc" id="L26">        box.add(Box.createVerticalStrut(25));</span>
+
+<span class="fc" id="L28">        List&lt;String&gt; perfiles = CatalogoMaquinas.perfiles();</span>
+<span class="fc" id="L29">        JPanel opciones = new JPanel(new GridLayout(0, 2, 25, 18));</span>
+<span class="fc" id="L30">        opciones.setOpaque(false);</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">        for (String perfil : perfiles) opciones.add(crearOpcion(perfil, alElegirPerfil));</span>
+<span class="fc" id="L32">        box.add(opciones);</span>
+<span class="fc" id="L33">        box.add(Box.createVerticalStrut(25));</span>
+
+<span class="fc" id="L35">        JButton volver = EstiloGUI.boton(&quot;VOLVER&quot;);</span>
+<span class="fc" id="L36">        volver.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="fc" id="L37">        volver.addActionListener(e -&gt; alVolver.run());</span>
+<span class="fc" id="L38">        box.add(volver);</span>
+
+<span class="fc" id="L40">        p.add(box);</span>
+<span class="fc" id="L41">        add(p, BorderLayout.CENTER);</span>
+<span class="fc" id="L42">    }</span>
+
+    /** Botón del perfil con una frase debajo que explica cómo juega. */
+    private JPanel crearOpcion(String perfil, Consumer&lt;String&gt; alElegirPerfil) {
+<span class="fc" id="L46">        JPanel opcion = new JPanel(new BorderLayout(0, 6));</span>
+<span class="fc" id="L47">        opcion.setOpaque(false);</span>
+<span class="fc" id="L48">        JButton boton = EstiloGUI.boton(perfil.toUpperCase());</span>
+<span class="fc" id="L49">        boton.addActionListener(e -&gt; alElegirPerfil.accept(perfil));</span>
+<span class="fc" id="L50">        opcion.add(boton, BorderLayout.CENTER);</span>
+<span class="fc" id="L51">        opcion.add(EstiloGUI.titulo(CatalogoMaquinas.crear(perfil).descripcion(), 14), BorderLayout.SOUTH);</span>
+<span class="fc" id="L52">        return opcion;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

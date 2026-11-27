@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CatalogoMaquinas.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">CatalogoMaquinas.java</span></div><h1>CatalogoMaquinas.java</h1><pre class="source lang-java linenums">package Domain;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+
+/** Registro de los perfiles de máquina. Un perfil nuevo solo necesita una línea aquí. */
+public final class CatalogoMaquinas {
+
+<span class="fc" id="L12">    private static final Map&lt;String, Supplier&lt;EstrategiaMaquina&gt;&gt; PERFILES = new LinkedHashMap&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L15">        PERFILES.put(&quot;Torpe&quot;, EstrategiaTorpe::new);</span>
+<span class="fc" id="L16">        PERFILES.put(&quot;Ofensiva&quot;, EstrategiaOfensiva::new);</span>
+<span class="fc" id="L17">        PERFILES.put(&quot;Defensiva&quot;, EstrategiaDefensiva::new);</span>
+<span class="fc" id="L18">        PERFILES.put(&quot;Experta&quot;, EstrategiaExperta::new);</span>
+<span class="fc" id="L19">    }</span>
+
+    private CatalogoMaquinas() {
+    }
+
+    public static List&lt;String&gt; perfiles() {
+<span class="fc" id="L25">        return new ArrayList&lt;&gt;(PERFILES.keySet());</span>
+    }
+
+    public static EstrategiaMaquina crear(String perfil) {
+<span class="fc" id="L29">        Supplier&lt;EstrategiaMaquina&gt; fabrica = PERFILES.get(perfil);</span>
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        if (fabrica == null) throw new ExcepcionJuego(&quot;Perfil de máquina no válido: &quot; + perfil);</span>
+<span class="fc" id="L31">        return fabrica.get();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

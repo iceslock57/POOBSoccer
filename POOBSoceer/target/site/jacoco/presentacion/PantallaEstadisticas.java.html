@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PantallaEstadisticas.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">PantallaEstadisticas.java</span></div><h1>PantallaEstadisticas.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import Domain.CatalogoPersonajes;
+import Domain.EstadisticasPersonaje;
+import Domain.PerfilJugador;
+import Domain.Personaje;
+import javax.swing.*;
+import java.awt.*;
+import java.util.EnumMap;
+import java.util.Map;
+
+/**
+ * Pantalla para mejorar un personaje con los puntos ganados en los partidos.
+ * Las mejoras son solo del jugador y del país que se están mostrando.
+ */
+class PantallaEstadisticas extends JPanel {
+
+    // Nombre con el que se muestra cada estadística.
+<span class="fc" id="L19">    private static final Map&lt;PerfilJugador.Estadistica, String&gt; NOMBRES = new EnumMap&lt;&gt;(PerfilJugador.Estadistica.class);</span>
+
+    static {
+<span class="fc" id="L22">        NOMBRES.put(PerfilJugador.Estadistica.SPEED, &quot;Velocidad&quot;);</span>
+<span class="fc" id="L23">        NOMBRES.put(PerfilJugador.Estadistica.JUMP, &quot;Salto&quot;);</span>
+<span class="fc" id="L24">        NOMBRES.put(PerfilJugador.Estadistica.KICK, &quot;Patada&quot;);</span>
+<span class="fc" id="L25">        NOMBRES.put(PerfilJugador.Estadistica.VIDA, &quot;Vida&quot;);</span>
+<span class="fc" id="L26">    }</span>
+
+<span class="fc" id="L28">    private final JLabel titulo = EstiloGUI.titulo(&quot;&quot;, 24);</span>
+<span class="fc" id="L29">    private final JLabel puntos = EstiloGUI.titulo(&quot;&quot;, 20);</span>
+<span class="fc" id="L30">    private final JLabel mensaje = EstiloGUI.titulo(&quot; &quot;, 16);</span>
+<span class="fc" id="L31">    private final Map&lt;PerfilJugador.Estadistica, JProgressBar&gt; barras = new EnumMap&lt;&gt;(PerfilJugador.Estadistica.class);</span>
+<span class="fc" id="L32">    private final Map&lt;PerfilJugador.Estadistica, JLabel&gt; efectos = new EnumMap&lt;&gt;(PerfilJugador.Estadistica.class);</span>
+<span class="fc" id="L33">    private final Map&lt;PerfilJugador.Estadistica, JButton&gt; botones = new EnumMap&lt;&gt;(PerfilJugador.Estadistica.class);</span>
+
+    private PerfilJugador perfil;
+    private String pais;
+
+    /** @param alVolver acción al presionar VOLVER */
+    PantallaEstadisticas(Runnable alVolver) {
+<span class="fc" id="L40">        super(new BorderLayout());</span>
+<span class="fc" id="L41">        JPanel p = EstiloGUI.fondo();</span>
+<span class="fc" id="L42">        JPanel box = crearRecuadro();</span>
+<span class="fc" id="L43">        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));</span>
+
+<span class="fc" id="L45">        agregarCentrado(box, titulo, 8);</span>
+<span class="fc" id="L46">        agregarCentrado(box, puntos, 20);</span>
+<span class="fc" id="L47">        agregarCentrado(box, crearTabla(), 14);</span>
+<span class="fc" id="L48">        agregarCentrado(box, mensaje, 14);</span>
+<span class="fc" id="L49">        JButton volver = EstiloGUI.boton(&quot;VOLVER&quot;);</span>
+<span class="fc" id="L50">        volver.addActionListener(e -&gt; alVolver.run());</span>
+<span class="fc" id="L51">        agregarCentrado(box, volver, 0);</span>
+
+<span class="fc" id="L53">        p.add(box);</span>
+<span class="fc" id="L54">        add(p, BorderLayout.CENTER);</span>
+<span class="fc" id="L55">    }</span>
+
+    /** Recuadro oscuro detrás del contenido, para que el texto se lea sobre el fondo. */
+    private JPanel crearRecuadro() {
+<span class="fc" id="L59">        JPanel recuadro = new JPanel() {</span>
+            @Override
+            protected void paintComponent(Graphics g) {
+<span class="fc" id="L62">                g.setColor(new Color(0, 0, 0, 150));</span>
+<span class="fc" id="L63">                g.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);</span>
+<span class="fc" id="L64">            }</span>
+        };
+<span class="fc" id="L66">        recuadro.setOpaque(false);</span>
+<span class="fc" id="L67">        recuadro.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));</span>
+<span class="fc" id="L68">        return recuadro;</span>
+    }
+
+    private void agregarCentrado(JPanel box, JComponent componente, int espacio) {
+<span class="fc" id="L72">        componente.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="fc" id="L73">        box.add(componente);</span>
+<span class="fc" id="L74">        box.add(Box.createVerticalStrut(espacio));</span>
+<span class="fc" id="L75">    }</span>
+
+    /** Una fila por estadística: nombre, nivel, lo que se gana con ese nivel y el botón para mejorar. */
+    private JPanel crearTabla() {
+<span class="fc" id="L79">        JPanel tabla = new JPanel(new GridBagLayout());</span>
+<span class="fc" id="L80">        tabla.setOpaque(false);</span>
+<span class="fc" id="L81">        GridBagConstraints c = new GridBagConstraints();</span>
+<span class="fc" id="L82">        c.insets = new Insets(7, 10, 7, 10);</span>
+<span class="fc" id="L83">        c.fill = GridBagConstraints.BOTH;</span>
+
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (PerfilJugador.Estadistica e : NOMBRES.keySet()) {</span>
+<span class="fc" id="L86">            c.gridy++;</span>
+<span class="fc" id="L87">            c.gridx = 0;</span>
+<span class="fc" id="L88">            JLabel nombre = EstiloGUI.titulo(NOMBRES.get(e), 18);</span>
+<span class="fc" id="L89">            nombre.setHorizontalAlignment(SwingConstants.LEFT);</span>
+<span class="fc" id="L90">            tabla.add(nombre, c);</span>
+
+<span class="fc" id="L92">            c.gridx = 1;</span>
+<span class="fc" id="L93">            JProgressBar barra = new JProgressBar(0, EstadisticasPersonaje.NIVEL_MAXIMO);</span>
+<span class="fc" id="L94">            barra.setPreferredSize(new Dimension(180, 26));</span>
+<span class="fc" id="L95">            barra.setMinimumSize(new Dimension(110, 26));</span>
+<span class="fc" id="L96">            barra.setStringPainted(true);</span>
+<span class="fc" id="L97">            barra.setForeground(new Color(40, 150, 75));</span>
+<span class="fc" id="L98">            barras.put(e, barra);</span>
+<span class="fc" id="L99">            tabla.add(barra, c);</span>
+
+<span class="fc" id="L101">            c.gridx = 2;</span>
+<span class="fc" id="L102">            JLabel efecto = EstiloGUI.titulo(&quot;&quot;, 15);</span>
+<span class="fc" id="L103">            efecto.setPreferredSize(new Dimension(95, 26));</span>
+<span class="fc" id="L104">            efectos.put(e, efecto);</span>
+<span class="fc" id="L105">            tabla.add(efecto, c);</span>
+
+<span class="fc" id="L107">            c.gridx = 3;</span>
+<span class="fc" id="L108">            JButton boton = EstiloGUI.boton(&quot;&quot;);</span>
+<span class="fc" id="L109">            boton.setFont(new Font(&quot;Arial&quot;, Font.BOLD, 15));</span>
+<span class="fc" id="L110">            boton.setPreferredSize(new Dimension(200, 40));</span>
+<span class="fc" id="L111">            boton.addActionListener(evento -&gt; mejorar(e));</span>
+<span class="fc" id="L112">            botones.put(e, boton);</span>
+<span class="fc" id="L113">            tabla.add(boton, c);</span>
+<span class="fc" id="L114">        }</span>
+<span class="fc" id="L115">        return tabla;</span>
+    }
+
+    /** Muestra las estadísticas que tiene ese jugador para ese país. */
+    void mostrar(String nombreJugador, PerfilJugador perfil, String pais) {
+<span class="fc" id="L120">        this.perfil = perfil;</span>
+<span class="fc" id="L121">        this.pais = pais;</span>
+<span class="fc" id="L122">        titulo.setText(&quot;ESTADÍSTICAS DE &quot; + pais.toUpperCase() + &quot; - &quot; + nombreJugador);</span>
+<span class="fc" id="L123">        mensaje.setText(&quot; &quot;);</span>
+<span class="fc" id="L124">        refrescar();</span>
+<span class="fc" id="L125">    }</span>
+
+    private void mejorar(PerfilJugador.Estadistica estadistica) {
+<span class="fc" id="L128">        boolean comprada = perfil.mejorar(pais, estadistica);</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        mensaje.setText(comprada</span>
+<span class="fc" id="L130">                ? NOMBRES.get(estadistica) + &quot; de &quot; + pais + &quot; subió al nivel &quot; + perfil.getNivel(pais, estadistica)</span>
+<span class="nc" id="L131">                : &quot;No alcanzan los puntos para esta mejora&quot;);</span>
+<span class="fc" id="L132">        refrescar();</span>
+<span class="fc" id="L133">    }</span>
+
+    private void refrescar() {
+<span class="fc" id="L136">        puntos.setText(&quot;Puntos disponibles: &quot; + perfil.getPuntos());</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (PerfilJugador.Estadistica e : NOMBRES.keySet()) {</span>
+<span class="fc" id="L138">            int nivel = perfil.getNivel(pais, e);</span>
+<span class="fc" id="L139">            barras.get(e).setValue(nivel);</span>
+<span class="fc" id="L140">            barras.get(e).setString(nivel + &quot; / &quot; + EstadisticasPersonaje.NIVEL_MAXIMO);</span>
+<span class="fc" id="L141">            efectos.get(e).setText(efectoDe(e, nivel));</span>
+
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            boolean alMaximo = nivel == EstadisticasPersonaje.NIVEL_MAXIMO;</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            botones.get(e).setText(alMaximo ? &quot;MÁXIMO&quot; : &quot;MEJORAR (&quot; + perfil.getCostoSiguienteMejora(pais) + &quot;)&quot;);</span>
+<span class="fc" id="L145">            botones.get(e).setEnabled(perfil.puedeMejorar(pais, e));</span>
+<span class="fc" id="L146">        }</span>
+<span class="fc" id="L147">    }</span>
+
+    /** La vida se muestra con su valor real y las demás con el porcentaje que ganan. */
+    private String efectoDe(PerfilJugador.Estadistica estadistica, int nivel) {
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        if (estadistica == PerfilJugador.Estadistica.VIDA) {</span>
+<span class="fc" id="L152">            Personaje personaje = CatalogoPersonajes.crear(pais, perfil);</span>
+<span class="fc" id="L153">            return personaje.getVidaMaxima() + &quot; HP&quot;;</span>
+        }
+<span class="fc" id="L155">        return &quot;+&quot; + (nivel - 1) * 10 + &quot; %&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

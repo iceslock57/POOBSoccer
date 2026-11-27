@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PantallaModalidad.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">PantallaModalidad.java</span></div><h1>PantallaModalidad.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import javax.swing.*;
+import java.awt.*;
+
+/** Pantalla para elegir contra quién se juega: otra persona o la máquina. */
+class PantallaModalidad extends JPanel {
+
+    /**
+     * @param contraJugador acción al elegir jugador vs jugador
+     * @param contraMaquina acción al elegir jugador vs máquina
+     * @param alVolver      acción al presionar VOLVER
+     */
+    PantallaModalidad(Runnable contraJugador, Runnable contraMaquina, Runnable alVolver) {
+<span class="fc" id="L15">        super(new BorderLayout());</span>
+<span class="fc" id="L16">        JPanel p = EstiloGUI.fondo();</span>
+<span class="fc" id="L17">        JPanel box = new JPanel();</span>
+<span class="fc" id="L18">        box.setOpaque(false);</span>
+<span class="fc" id="L19">        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));</span>
+
+<span class="fc" id="L21">        JLabel h = EstiloGUI.titulo(&quot;SELECCIONA EL MODO DE JUEGO&quot;, 28);</span>
+<span class="fc" id="L22">        h.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="fc" id="L23">        box.add(h);</span>
+<span class="fc" id="L24">        box.add(Box.createVerticalStrut(35));</span>
+<span class="fc" id="L25">        agregarBoton(box, &quot;JUGADOR VS JUGADOR&quot;, contraJugador);</span>
+<span class="fc" id="L26">        box.add(Box.createVerticalStrut(18));</span>
+<span class="fc" id="L27">        agregarBoton(box, &quot;JUGADOR VS MÁQUINA&quot;, contraMaquina);</span>
+<span class="fc" id="L28">        box.add(Box.createVerticalStrut(25));</span>
+<span class="fc" id="L29">        agregarBoton(box, &quot;VOLVER&quot;, alVolver);</span>
+
+<span class="fc" id="L31">        p.add(box);</span>
+<span class="fc" id="L32">        add(p, BorderLayout.CENTER);</span>
+<span class="fc" id="L33">    }</span>
+
+    private void agregarBoton(JPanel box, String texto, Runnable accion) {
+<span class="fc" id="L36">        JButton boton = EstiloGUI.boton(texto);</span>
+<span class="fc" id="L37">        boton.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="fc" id="L38">        boton.addActionListener(e -&gt; accion.run());</span>
+<span class="fc" id="L39">        box.add(boton);</span>
+<span class="fc" id="L40">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

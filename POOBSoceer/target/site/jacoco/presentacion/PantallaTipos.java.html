@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PantallaTipos.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">presentacion</a> &gt; <span class="el_source">PantallaTipos.java</span></div><h1>PantallaTipos.java</h1><pre class="source lang-java linenums">package presentacion;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.function.Consumer;
+
+/**
+ * Pantalla para elegir el tipo de partido: por tiempo o por goles.
+ * Avisa el tipo elegido (&quot;Tiempo&quot; o &quot;Goles&quot;) a quien la crea.
+ */
+class PantallaTipos extends JPanel {
+
+    /**
+     * @param alElegirTipo acción que recibe el tipo elegido: &quot;Tiempo&quot; o &quot;Goles&quot;
+     * @param alVolver     acción al presionar VOLVER
+     */
+    PantallaTipos(Consumer&lt;String&gt; alElegirTipo, Runnable alVolver) {
+<span class="fc" id="L18">        super(new BorderLayout());</span>
+<span class="fc" id="L19">        JPanel p = EstiloGUI.fondo();</span>
+<span class="fc" id="L20">        JPanel box = new JPanel();</span>
+<span class="fc" id="L21">        box.setOpaque(false);</span>
+<span class="fc" id="L22">        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));</span>
+
+<span class="fc" id="L24">        JLabel h = EstiloGUI.titulo(&quot;SELECCIONA EL TIPO DE PARTIDO&quot;, 28);</span>
+<span class="fc" id="L25">        h.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="fc" id="L26">        box.add(h);</span>
+<span class="fc" id="L27">        box.add(Box.createVerticalStrut(35));</span>
+
+<span class="fc" id="L29">        JButton tiempo = EstiloGUI.boton(&quot;PARTIDO POR TIEMPO&quot;);</span>
+<span class="fc" id="L30">        tiempo.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="fc" id="L31">        tiempo.addActionListener(e -&gt; alElegirTipo.accept(&quot;Tiempo&quot;));</span>
+<span class="fc" id="L32">        box.add(tiempo);</span>
+<span class="fc" id="L33">        box.add(Box.createVerticalStrut(18));</span>
+
+<span class="fc" id="L35">        JButton goles = EstiloGUI.boton(&quot;PARTIDO POR GOLES&quot;);</span>
+<span class="fc" id="L36">        goles.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="fc" id="L37">        goles.addActionListener(e -&gt; alElegirTipo.accept(&quot;Goles&quot;));</span>
+<span class="fc" id="L38">        box.add(goles);</span>
+<span class="fc" id="L39">        box.add(Box.createVerticalStrut(25));</span>
+
+<span class="fc" id="L41">        JButton volver = EstiloGUI.boton(&quot;VOLVER&quot;);</span>
+<span class="fc" id="L42">        volver.setAlignmentX(Component.CENTER_ALIGNMENT);</span>
+<span class="fc" id="L43">        volver.addActionListener(e -&gt; alVolver.run());</span>
+<span class="fc" id="L44">        box.add(volver);</span>
+
+<span class="fc" id="L46">        p.add(box);</span>
+<span class="fc" id="L47">        add(p, BorderLayout.CENTER);</span>
+<span class="fc" id="L48">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

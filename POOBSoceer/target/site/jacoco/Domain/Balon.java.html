@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Balon.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">Balon.java</span></div><h1>Balon.java</h1><pre class="source lang-java linenums">package Domain;
+
+/**
+ * Representa el balón del juego.
+ * Maneja sus propias físicas básicas de movimiento, gravedad y rebotes.
+ */
+public class Balon {
+    
+    private double posX;
+    private double posY;
+    private double velX;
+    private double velY;
+    private int radio;
+    
+    // Constante para la fuerza de gravedad
+<span class="fc" id="L16">    private final double GRAVEDAD = 0.42;</span>
+    // El rebote en una cabeza siempre se nota, pero tampoco sale disparado.
+    private static final double REBOTE_CABEZA = .8, REBOTE_MINIMO = 6, REBOTE_MAXIMO = 13;
+    private static final double DESVIO_CABEZA = 3.5, AVANCE_MINIMO = 1.5;
+    /** Grueso del palo de arriba de cada arco, igual al trazo con que se dibuja. */
+    public static final double GROSOR_TRAVESANO = 7;
+    // Velocidad con la que sale el balón cuando lo toca el cuerpo de un jugador.
+    private static final double EMPUJE_CUERPO = 3;
+    private boolean disparoEspecial;
+    private int propietarioDisparo;
+    // Lugar desde donde salió el último tiro de poder.
+    private double origenDisparo;
+
+    /**
+     * Constructor del Balon.
+     * 
+     * @param x Posición inicial en X.
+     * @param y Posición inicial en Y.
+     * @param radio Radio del balón para cálculo de colisiones.
+     */
+<span class="fc" id="L36">    public Balon(double x, double y, int radio) {</span>
+<span class="fc" id="L37">        this.posX = x;</span>
+<span class="fc" id="L38">        this.posY = y;</span>
+<span class="fc" id="L39">        this.radio = radio;</span>
+<span class="fc" id="L40">        this.velX = 0;</span>
+<span class="fc" id="L41">        this.velY = 0;</span>
+<span class="fc" id="L42">    }</span>
+
+    /**
+     * Aplica la fuerza de gravedad aumentando la velocidad vertical hacia abajo.
+     * El balón está afectado por la gravedad en todo momento.
+     */
+    public void aplicarGravedad() {
+        // Los tiros especiales del anexo son rectos; la gravedad no curva su trayectoria.
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (!disparoEspecial) this.velY += GRAVEDAD;</span>
+<span class="fc" id="L51">    }</span>
+
+    /**
+     * Actualiza la posición del balón basándose en su velocidad actual.
+     */
+    public void mover() {
+<span class="fc" id="L57">        this.posX += this.velX;</span>
+<span class="fc" id="L58">        this.posY += this.velY;</span>
+<span class="fc" id="L59">    }</span>
+
+    /**
+     * Maneja el rebote del balón cuando colisiona con los bordes de la cancha.
+     * El balón rebota en el suelo y en los bordes.
+     * 
+     * @param limiteX Ancho de la cancha.
+     * @param limiteY Alto de la cancha (suelo).
+     */
+    public void rebotar(int limiteX, int limiteY) {
+        // El techo SIEMPRE es sólido: nunca se puede marcar por encima de la cancha.
+        // Rebote en el suelo y techo
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (this.posY + this.radio &gt;= limiteY) {</span>
+<span class="nc" id="L72">            this.posY = limiteY - this.radio;</span>
+<span class="nc" id="L73">            this.velY = -this.velY * 0.8; // Pierde un poco de energía al rebotar</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        } else if (this.posY - this.radio &lt;= 0) {</span>
+<span class="nc" id="L75">            this.posY = this.radio;</span>
+<span class="nc" id="L76">            this.velY = -this.velY * 0.8;</span>
+        }
+        
+        // Solo se deja pasar por la abertura vertical real de los arcos.
+<span class="nc bnc" id="L80" title="All 4 branches missed.">        boolean alturaDePorteria = this.posY &gt;= limiteY - 150 &amp;&amp; this.posY &lt;= limiteY - 25;</span>
+<span class="nc bnc" id="L81" title="All 4 branches missed.">        if (this.posX + this.radio &gt;= limiteX &amp;&amp; !alturaDePorteria) {</span>
+<span class="nc" id="L82">            this.posX = limiteX - this.radio;</span>
+<span class="nc" id="L83">            this.velX = -this.velX * 0.8;</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">        } else if (this.posX - this.radio &lt;= 0 &amp;&amp; !alturaDePorteria) {</span>
+<span class="nc" id="L85">            this.posX = this.radio;</span>
+<span class="nc" id="L86">            this.velX = -this.velX * 0.8;</span>
+        }
+<span class="nc" id="L88">    }</span>
+
+    /**
+     * Rebotes robustos con la geometría real de la cancha.
+     * El techo es siempre sólido, incluso durante un disparo especial.
+     */
+    public void rebotar(Cancha cancha) {
+<span class="fc" id="L95">        int ancho = cancha.getAncho();</span>
+<span class="fc" id="L96">        int suelo = cancha.getSuelo();</span>
+<span class="fc" id="L97">        Arco arco = cancha.getArcoIzquierdo();</span>
+
+        // Techo y suelo se resuelven por separado para no omitir un rebote.
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (posY - radio &lt;= 0) {</span>
+<span class="fc" id="L101">            posY = radio;</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">            if (velY &lt; 0) velY = Math.abs(velY) * 0.8;</span>
+        }
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (posY + radio &gt;= suelo) {</span>
+<span class="fc" id="L105">            posY = suelo - radio;</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (velY &gt; 0) velY = -Math.abs(velY) * 0.8;</span>
+        }
+
+        // Los travesaños se revisan antes que los lados, porque pueden acomodar el balón.
+<span class="fc" id="L110">        rebotarEnTravesano(cancha.getArcoIzquierdo());</span>
+<span class="fc" id="L111">        rebotarEnTravesano(cancha.getArcoDerecho());</span>
+
+        // Los laterales solo se abren dentro de la boca de las porterías.
+<span class="fc" id="L114">        double arriba = arco.getPosY();</span>
+<span class="fc" id="L115">        double abajo = arriba + arco.getAlto();</span>
+<span class="pc bpc" id="L116" title="1 of 4 branches missed.">        boolean dentroAbertura = posY - radio &gt;= arriba</span>
+                &amp;&amp; posY + radio &lt;= abajo;
+
+<span class="fc bfc" id="L119" title="All 4 branches covered.">        if (posX - radio &lt;= 0 &amp;&amp; !dentroAbertura) {</span>
+<span class="fc" id="L120">            posX = radio;</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">            if (velX &lt; 0) velX = Math.abs(velX) * 0.8;</span>
+        }
+<span class="fc bfc" id="L123" title="All 4 branches covered.">        if (posX + radio &gt;= ancho &amp;&amp; !dentroAbertura) {</span>
+<span class="fc" id="L124">            posX = ancho - radio;</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">            if (velX &gt; 0) velX = -Math.abs(velX) * 0.8;</span>
+        }
+<span class="fc" id="L127">    }</span>
+
+    /**
+     * El palo de arriba del arco es sólido. Si el balón le cae encima, rebota hacia arriba;
+     * si lo golpea desde abajo, dentro del arco, rebota hacia abajo.
+     */
+    private void rebotarEnTravesano(Arco arco) {
+<span class="fc" id="L134">        double izquierda = arco.getPosX(), derecha = izquierda + arco.getAncho();</span>
+<span class="fc" id="L135">        double arriba = arco.getPosY() - GROSOR_TRAVESANO / 2, abajo = arco.getPosY() + GROSOR_TRAVESANO / 2;</span>
+
+<span class="fc bfc" id="L137" title="All 8 branches covered.">        boolean tocaElPalo = posX + radio &gt; izquierda &amp;&amp; posX - radio &lt; derecha</span>
+                &amp;&amp; posY + radio &gt; arriba &amp;&amp; posY - radio &lt; abajo;
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (!tocaElPalo) return;</span>
+
+        // Se mira dónde estaba el balón un cuadro antes para saber por qué lado llegó.
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        boolean veniaDeArriba = posY - velY &lt;= arco.getPosY();</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        if (veniaDeArriba) {</span>
+<span class="fc" id="L144">            posY = arriba - radio;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            if (velY &gt; 0) velY = -velY * 0.8;</span>
+        } else {
+<span class="fc" id="L147">            posY = abajo + radio;</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">            if (velY &lt; 0) velY = -velY * 0.8;</span>
+        }
+<span class="fc" id="L150">    }</span>
+
+    /**
+     * Devuelve el balón a una posición específica sin velocidad.
+     * Usado después de cada gol para que el balón caiga desde el centro.
+     * 
+     * @param x Nueva posición X.
+     * @param y Nueva posición Y.
+     */
+    public void resetearPosicion(double x, double y) {
+<span class="fc" id="L160">        this.posX = x;</span>
+<span class="fc" id="L161">        this.posY = y;</span>
+<span class="fc" id="L162">        this.velX = 0;</span>
+<span class="fc" id="L163">        this.velY = 0;</span>
+<span class="fc" id="L164">        this.disparoEspecial = false;</span>
+<span class="fc" id="L165">        this.propietarioDisparo = 0;</span>
+<span class="fc" id="L166">    }</span>
+    /**
+     * Sobrescribe la velocidad actual del balón por una nueva fuerza de impacto.
+     */
+    public void aplicarFuerza(double fX, double fY) {
+<span class="fc" id="L171">        this.velX = fX; this.velY = fY; this.disparoEspecial = false; this.propietarioDisparo = 0;</span>
+<span class="fc" id="L172">    }</span>
+    public void aplicarDisparoEspecial(double fX, double fY, int propietario) {
+<span class="fc" id="L174">        this.velX=fX; this.velY=fY; this.disparoEspecial=true; this.propietarioDisparo=propietario;</span>
+<span class="fc" id="L175">        this.origenDisparo = posX;</span>
+<span class="fc" id="L176">    }</span>
+    /** Cambia la velocidad sin quitarle al balón la marca de tiro de poder. */
+    public void cambiarVelocidad(double nuevaVelX, double nuevaVelY) {
+<span class="fc" id="L179">        this.velX = nuevaVelX;</span>
+<span class="fc" id="L180">        this.velY = nuevaVelY;</span>
+<span class="fc" id="L181">    }</span>
+
+    /** El balón viene de arriba y está tocando la cabeza, no un lado del cuerpo. */
+    public boolean caeSobre(Personaje personaje) {
+<span class="fc" id="L185">        double alturaAnterior = posY - Math.max(0, velY);</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        return alturaAnterior &lt;= personaje.getPosY();</span>
+    }
+
+    /**
+     * Rebota en la cabeza de un personaje. Sube más si la cabeza venía saltando y se desvía hacia
+     * el lado donde pegó; si pegó justo en el centro, avanza en la dirección indicada.
+     */
+    public void rebotarEnCabeza(Personaje personaje, int direccion) {
+<span class="fc" id="L194">        double mitad = Personaje.ANCHO / 2.0;</span>
+<span class="fc" id="L195">        double lado = Math.max(-1, Math.min(1, (posX - personaje.getPosX() - mitad) / mitad));</span>
+<span class="fc" id="L196">        double velCabeza = Math.min(0, personaje.getVelY());</span>
+<span class="fc" id="L197">        double golpe = Math.max(0, velY - velCabeza);</span>
+<span class="fc" id="L198">        double subida = golpe * REBOTE_CABEZA - velCabeza;</span>
+
+<span class="fc" id="L200">        posY = personaje.getPosY() - radio;</span>
+<span class="fc" id="L201">        velY = -Math.max(REBOTE_MINIMO, Math.min(REBOTE_MAXIMO, subida));</span>
+<span class="fc" id="L202">        velX = velX * .7 + lado * DESVIO_CABEZA;</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        if (Math.abs(velX) &lt; AVANCE_MINIMO) velX = direccion * AVANCE_MINIMO;</span>
+<span class="fc" id="L204">    }</span>
+
+    /**
+     * Rebota en un costado del cuerpo. Sale por el lado donde está el balón, fuera del cuerpo para que
+     * no quede atrapado, y con al menos la mitad de la velocidad que traía, o un empujón suave si venía quieto.
+     * Si queda justo en el centro del cuerpo, sale hacia donde mira el jugador.
+     */
+    public void rebotarEnElCostado(Personaje personaje, int direccion) {
+<span class="fc" id="L212">        double centro = personaje.getPosX() + Personaje.ANCHO / 2.0;</span>
+<span class="pc bpc" id="L213" title="1 of 4 branches missed.">        int lado = posX &lt; centro ? -1 : posX &gt; centro ? 1 : direccion;</span>
+
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        posX = lado &lt; 0 ? personaje.getPosX() - radio : personaje.getPosX() + Personaje.ANCHO + radio;</span>
+<span class="fc" id="L216">        velX = lado * Math.max(EMPUJE_CUERPO, Math.abs(velX) * .5);</span>
+<span class="fc" id="L217">        velY = Math.min(velY, -2.5);</span>
+<span class="fc" id="L218">        disparoEspecial = false;</span>
+<span class="fc" id="L219">        propietarioDisparo = 0;</span>
+<span class="fc" id="L220">    }</span>
+
+    /** Evita que el balón salga por los lados, incluso por la abertura de los arcos. */
+    public void rebotarEnLosLados(int limiteX) {
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        if (posX - radio &lt; 0) {</span>
+<span class="fc" id="L225">            posX = radio;</span>
+<span class="fc" id="L226">            velX = Math.abs(velX) * 0.8;</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        } else if (posX + radio &gt; limiteX) {</span>
+<span class="fc" id="L228">            posX = limiteX - radio;</span>
+<span class="fc" id="L229">            velX = -Math.abs(velX) * 0.8;</span>
+        }
+<span class="fc" id="L231">    }</span>
+
+<span class="fc" id="L233">    public boolean isDisparoEspecial(){ return disparoEspecial; }</span>
+<span class="fc" id="L234">    public int getPropietarioDisparo(){ return propietarioDisparo; }</span>
+<span class="fc" id="L235">    public void consumirDisparoEspecial(){ disparoEspecial=false; propietarioDisparo=0; }</span>
+
+    void guardar(EscritorPartida e) {
+<span class="fc" id="L238">        e.decimal(posX);</span>
+<span class="fc" id="L239">        e.decimal(posY);</span>
+<span class="fc" id="L240">        e.decimal(velX);</span>
+<span class="fc" id="L241">        e.decimal(velY);</span>
+<span class="fc" id="L242">        e.logico(disparoEspecial);</span>
+<span class="fc" id="L243">        e.entero(propietarioDisparo, 2);</span>
+<span class="fc" id="L244">        e.decimal(origenDisparo);</span>
+<span class="fc" id="L245">    }</span>
+
+    void restaurar(LectorPartida l) {
+<span class="fc" id="L248">        posX = l.decimal();</span>
+<span class="fc" id="L249">        posY = l.decimal();</span>
+<span class="fc" id="L250">        velX = l.decimal();</span>
+<span class="fc" id="L251">        velY = l.decimal();</span>
+<span class="fc" id="L252">        disparoEspecial = l.logico();</span>
+<span class="fc" id="L253">        propietarioDisparo = l.entero(2);</span>
+<span class="fc" id="L254">        origenDisparo = l.decimal();</span>
+<span class="fc" id="L255">    }</span>
+
+    // Getters con estructura estricta
+
+    public double getOrigenDisparo() {
+<span class="fc" id="L260">        return origenDisparo;</span>
+    }
+
+    public double getPosX(){
+<span class="fc" id="L264">        return this.posX;</span>
+    }
+
+    public double getPosY(){
+<span class="fc" id="L268">        return this.posY;</span>
+    }
+
+    public double getVelX(){
+<span class="fc" id="L272">        return this.velX;</span>
+    }
+
+    public double getVelY(){
+<span class="fc" id="L276">        return this.velY;</span>
+    }
+
+    public int getRadio(){
+<span class="fc" id="L280">        return this.radio;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

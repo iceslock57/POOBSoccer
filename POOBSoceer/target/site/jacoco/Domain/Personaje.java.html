@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Personaje.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">Personaje.java</span></div><h1>Personaje.java</h1><pre class="source lang-java linenums">package Domain;
+
+/** Personaje con movimiento, salto, daño y efectos temporales. */
+public class Personaje {
+
+    private static final double GRAVEDAD = .48;
+    private static final int CUADROS_POR_SEGUNDO = 60;
+    /** Caja de choque del personaje en píxeles de cancha. La interfaz dibuja al personaje dentro de esta caja. */
+    public static final int ANCHO = 52, ALTO = 80;
+    // Lo que avanza en cada cuadro y la fuerza del salto con la estadística en 1; cada punto extra suma un 10 %.
+    private static final double IMPULSO_SALTO_BASE = 7.7;
+    /** Píxeles que avanza en cada cuadro un personaje con Speed 1. Subir este valor hace más rápidos a todos. */
+    public static final double PASO_BASE = 2.7;
+    /** Cuadros que dura una patada (12 cuadros = 0,2 s a 60 fps). */
+    public static final int DURACION_PATADA = 12;
+
+    // Hasta dónde llega el pie por delante del cuerpo y a qué altura del cuerpo empieza.
+    private static final double ALCANCE_PIE = 24, ALTURA_PIE = 44, PARTE_BAJA_RIVAL = 36;
+    // Al patear, la punta del pie sube; por eso alcanza balones un poco más altos que el tobillo.
+    private static final double ALTURA_PUNTA_PIE = 28;
+    // El empuje arranca fuerte y se va frenando hasta un arrastre constante.
+    private static final double EMPUJE_INICIAL = 14, EMPUJE_MINIMO = 6, FRENADO = .82;
+    private static final double SEGUNDOS_EMPUJE = 1.5;
+    private static final double LANZAMIENTO_AL_AIRE = 11;
+
+    private final String nombre, pais;
+
+    private int velocidad, salto, kick, survival;
+    private Poder poderEspecial;
+
+    private double posX, posY, velX, velY;
+
+    private int framesPateando, framesAturdido, framesEfecto, framesCongelado, framesInconsciente, framesEmpuje;
+    private int framesQuemado;
+    private double danioQuemaduraPorSegundo;
+    private int direccionEmpuje;
+    private int vidaActual;
+
+    private boolean electrificado, confundido;
+    // Se vuelve verdadero cuando el pie ya golpeó el balón durante la patada actual.
+    private boolean pieUsado;
+
+<span class="fc" id="L43">    private int suelo = 500, limiteX = 1000;</span>
+
+    public Personaje(String n, String p, int v, int s, int k, Poder poder) {
+<span class="fc" id="L46">        this(n, p, v, s, k, 1, poder);</span>
+<span class="fc" id="L47">    }</span>
+
+<span class="fc" id="L49">    public Personaje(String n, String p, int v, int s, int k, int surv, Poder poder) {</span>
+<span class="fc" id="L50">        nombre = n;</span>
+<span class="fc" id="L51">        pais = p;</span>
+<span class="fc" id="L52">        velocidad = limitar(v);</span>
+<span class="fc" id="L53">        salto = limitar(s);</span>
+<span class="fc" id="L54">        kick = limitar(k);</span>
+<span class="fc" id="L55">        survival = limitar(surv);</span>
+<span class="fc" id="L56">        poderEspecial = poder;</span>
+<span class="fc" id="L57">        vidaActual = getVidaMaxima();</span>
+<span class="fc" id="L58">    }</span>
+
+    /** Cada punto por encima de uno suma un diez por ciento al valor base. */
+    private double multiplicadorPorNivel(int nivel) {
+<span class="fc" id="L62">        return 1 + .10 * (nivel - 1);</span>
+    }
+
+    private int limitar(int x) {
+<span class="fc" id="L66">        return Math.max(1, Math.min(10, x));</span>
+    }
+
+    private static int enCuadros(double segundos) {
+<span class="fc" id="L70">        return (int) Math.round(Math.max(0, segundos) * CUADROS_POR_SEGUNDO);</span>
+    }
+
+    public void configurarCancha(int ancho, int suelo) {
+<span class="fc" id="L74">        limiteX = ancho;</span>
+<span class="fc" id="L75">        this.suelo = suelo - ALTO;</span>
+
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (posY &gt; this.suelo) posY = this.suelo;</span>
+<span class="fc" id="L78">    }</span>
+
+    public int getVidaMaxima() {
+<span class="fc" id="L81">        return 100 + 10 * (survival - 1);</span>
+    }
+
+    public double getMultiplicadorKick() {
+<span class="fc" id="L85">        return multiplicadorPorNivel(kick);</span>
+    }
+
+    /** Camina hacia un lado. La electrocución lo deja a mitad de velocidad y el empuje no le permite caminar. */
+    public void mover(int dir, Personaje rival) {
+<span class="fc bfc" id="L90" title="All 4 branches covered.">        if (inmovilizado() || isEmpujado()) return;</span>
+
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        double ritmo = multiplicadorPorNivel(velocidad) * (electrificado ? .5 : 1);</span>
+<span class="fc" id="L93">        ubicarEnX(posX + dir * PASO_BASE * ritmo, rival);</span>
+<span class="fc" id="L94">    }</span>
+
+    /** Lleva al personaje a una posición sin salirse de la cancha ni atravesar al rival. */
+    private void ubicarEnX(double x, Personaje rival) {
+<span class="fc" id="L98">        posX = dentroDeLaCancha(mantenerSeparacionHorizontal(dentroDeLaCancha(x), rival));</span>
+<span class="fc" id="L99">    }</span>
+
+    private double dentroDeLaCancha(double x) {
+<span class="fc" id="L102">        return Math.max(0, Math.min(limiteX - ANCHO, x));</span>
+    }
+
+    private double mantenerSeparacionHorizontal(double x, Personaje rival) {
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (rival == null) return x;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        return posX &lt;= rival.posX</span>
+<span class="fc" id="L108">                ? Math.min(x, rival.posX - ANCHO)</span>
+<span class="fc" id="L109">                : Math.max(x, rival.posX + ANCHO);</span>
+    }
+
+    public void saltar() {
+<span class="fc bfc" id="L113" title="All 4 branches covered.">        if (inmovilizado() || electrificado) return;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (posY &gt;= suelo - .1) velY = -IMPULSO_SALTO_BASE * multiplicadorPorNivel(salto);</span>
+<span class="fc" id="L115">    }</span>
+
+    /** Empieza una patada nueva; el pie vuelve a poder golpear el balón. */
+    public void patear() {
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        if (inmovilizado()) return;</span>
+<span class="fc" id="L120">        framesPateando = DURACION_PATADA;</span>
+<span class="fc" id="L121">        pieUsado = false;</span>
+<span class="fc" id="L122">    }</span>
+
+    /**
+     * El pie ya le pegó al balón en esta patada. El movimiento sigue hasta terminar,
+     * pero el mismo pie no vuelve a golpear hasta la siguiente patada.
+     */
+    public void consumirPatada() {
+<span class="fc" id="L129">        pieUsado = true;</span>
+<span class="fc" id="L130">    }</span>
+
+    public void actualizarEstado() {
+<span class="fc" id="L133">        actualizarEstado(null);</span>
+<span class="fc" id="L134">    }</span>
+
+    /** Avanza un cuadro: mueve al personaje y descuenta el tiempo de sus efectos. */
+    public void actualizarEstado(Personaje rival) {
+<span class="fc" id="L138">        double destino = dentroDeLaCancha(posX + velX);</span>
+<span class="fc" id="L139">        ubicarEnX(destino, rival);</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        boolean chocoConElRival = Math.abs(posX - destino) &gt; .001;</span>
+
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        velX = chocoConElRival ? 0 : velX * FRENADO;</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        if (Math.abs(velX) &lt; .15) velX = 0;</span>
+<span class="fc" id="L144">        avanzarEmpuje();</span>
+
+<span class="fc" id="L146">        velY += GRAVEDAD;</span>
+<span class="fc" id="L147">        posY += velY;</span>
+
+<span class="fc bfc" id="L149" title="All 2 branches covered.">        if (posY &gt;= suelo) {</span>
+<span class="fc" id="L150">            posY = suelo;</span>
+<span class="fc" id="L151">            velY = 0;</span>
+        }
+
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        if (framesPateando &gt; 0) framesPateando--;</span>
+        // Va antes del aturdimiento para no quitarle vida justo cuando la recupera.
+<span class="fc" id="L156">        avanzarQuemadura();</span>
+
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        if (framesAturdido &gt; 0) {</span>
+<span class="fc" id="L159">            framesAturdido--;</span>
+
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            if (framesAturdido == 0) {</span>
+<span class="fc" id="L162">                vidaActual = getVidaMaxima();</span>
+            }
+        }
+
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (framesEfecto &gt; 0) {</span>
+<span class="fc" id="L167">            framesEfecto--;</span>
+
+<span class="fc bfc" id="L169" title="All 2 branches covered.">            if (framesEfecto == 0) {</span>
+<span class="fc" id="L170">                electrificado = false;</span>
+<span class="fc" id="L171">                confundido = false;</span>
+            }
+        }
+
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        if (framesCongelado &gt; 0) framesCongelado--;</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        if (framesInconsciente &gt; 0) framesInconsciente--;</span>
+<span class="fc" id="L177">    }</span>
+
+    /** El fuego quita vida una vez por segundo. Si ya quedó sin vida no le sigue pegando, para no alargar el aturdimiento. */
+    private void avanzarQuemadura() {
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (framesQuemado == 0) return;</span>
+
+<span class="fc" id="L183">        framesQuemado--;</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        boolean pasoUnSegundo = framesQuemado % CUADROS_POR_SEGUNDO == 0;</span>
+<span class="fc bfc" id="L185" title="All 4 branches covered.">        if (pasoUnSegundo &amp;&amp; !aturdido()) recibirDanio(danioQuemaduraPorSegundo);</span>
+<span class="fc" id="L186">    }</span>
+
+    /** Mientras dura el empuje, el personaje sigue siendo arrastrado aunque vaya perdiendo impulso. */
+    private void avanzarEmpuje() {
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        if (framesEmpuje == 0) return;</span>
+
+<span class="fc" id="L192">        framesEmpuje--;</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        velX = framesEmpuje == 0 ? 0 : direccionEmpuje * Math.max(EMPUJE_MINIMO, Math.abs(velX));</span>
+<span class="fc" id="L194">    }</span>
+
+    public void recibirDanio(double d) {
+<span class="fc" id="L197">        vidaActual = Math.max(0, vidaActual - (int) Math.round(Math.max(0, d)));</span>
+
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        if (vidaActual == 0) aturdir(3);</span>
+<span class="fc" id="L200">    }</span>
+
+    public void aturdir(int s) {
+<span class="fc" id="L203">        framesAturdido = Math.max(framesAturdido, enCuadros(s));</span>
+<span class="fc" id="L204">        framesPateando = 0;</span>
+<span class="fc" id="L205">        framesEmpuje = 0;</span>
+<span class="fc" id="L206">        velX = 0;</span>
+<span class="fc" id="L207">    }</span>
+
+    public void congelar(double s) {
+<span class="fc" id="L210">        limpiarEfectosEspeciales();</span>
+<span class="fc" id="L211">        framesCongelado = enCuadros(s);</span>
+<span class="fc" id="L212">        framesPateando = 0;</span>
+<span class="fc" id="L213">        velX = 0;</span>
+<span class="fc" id="L214">    }</span>
+
+    /** No puede saltar y camina a la mitad de su velocidad. */
+    public void aplicarElectrocucion(double s) {
+<span class="fc" id="L218">        limpiarEfectosEspeciales();</span>
+<span class="fc" id="L219">        electrificado = true;</span>
+<span class="fc" id="L220">        framesEfecto = enCuadros(s);</span>
+<span class="fc" id="L221">        velX *= .5;</span>
+<span class="fc" id="L222">    }</span>
+
+    /** Sale volando y queda sin poder moverse, saltar ni patear. */
+    public void aplicarInconsciencia(double s) {
+<span class="fc" id="L226">        limpiarEfectosEspeciales();</span>
+<span class="fc" id="L227">        framesInconsciente = enCuadros(s);</span>
+<span class="fc" id="L228">        framesPateando = 0;</span>
+<span class="fc" id="L229">        velX = 0;</span>
+<span class="fc" id="L230">        velY = -LANZAMIENTO_AL_AIRE;</span>
+<span class="fc" id="L231">    }</span>
+
+    /** Queda confundido; mientras dure, en la cancha siguen los balones falsos. */
+    public void aplicarConfusion(double s) {
+<span class="fc" id="L235">        limpiarEfectosEspeciales();</span>
+<span class="fc" id="L236">        confundido = true;</span>
+<span class="fc" id="L237">        framesEfecto = enCuadros(s);</span>
+<span class="fc" id="L238">    }</span>
+
+    /** Puede moverse con normalidad, pero va perdiendo vida cada segundo. */
+    public void aplicarQuemadura(double s, double danioPorSegundo) {
+<span class="fc" id="L242">        limpiarEfectosEspeciales();</span>
+<span class="fc" id="L243">        framesQuemado = enCuadros(s);</span>
+<span class="fc" id="L244">        danioQuemaduraPorSegundo = danioPorSegundo;</span>
+<span class="fc" id="L245">    }</span>
+
+    public void aplicarEmpuje(int direccion) {
+<span class="fc" id="L248">        aplicarEmpuje(direccion, SEGUNDOS_EMPUJE);</span>
+<span class="fc" id="L249">    }</span>
+
+    /** Lo arrastra en una dirección durante el tiempo indicado. Un personaje aturdido no se mueve. */
+    public void aplicarEmpuje(int direccion, double s) {
+<span class="fc" id="L253">        limpiarEfectosEspeciales();</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        if (inmovilizado()) return;</span>
+
+<span class="fc" id="L256">        direccionEmpuje = direccion;</span>
+<span class="fc" id="L257">        framesEmpuje = enCuadros(s);</span>
+<span class="fc" id="L258">        velX = direccion * EMPUJE_INICIAL;</span>
+<span class="fc" id="L259">        velY = 0;</span>
+<span class="fc" id="L260">    }</span>
+
+    /** Los efectos no se acumulan: cada uno nuevo borra el que hubiera antes. */
+    private void limpiarEfectosEspeciales() {
+<span class="fc bfc" id="L264" title="All 2 branches covered.">        if (framesEmpuje &gt; 0) velX = 0;</span>
+<span class="fc" id="L265">        framesEfecto = framesCongelado = framesInconsciente = framesEmpuje = framesQuemado = 0;</span>
+<span class="fc" id="L266">        electrificado = confundido = false;</span>
+<span class="fc" id="L267">    }</span>
+
+    public void resetearPosicion(double x, double y) {
+<span class="fc" id="L270">        posX = x;</span>
+<span class="fc" id="L271">        posY = y;</span>
+<span class="fc" id="L272">        limpiarEfectosEspeciales();</span>
+<span class="fc" id="L273">        velX = 0;</span>
+<span class="fc" id="L274">        velY = 0;</span>
+<span class="fc" id="L275">        framesPateando = framesAturdido = 0;</span>
+<span class="fc" id="L276">        vidaActual = getVidaMaxima();</span>
+<span class="fc" id="L277">    }</span>
+
+    /** Guarda cómo está en este momento: dónde va, cuánta vida le queda y qué efectos sufre. */
+    void guardar(EscritorPartida e) {
+<span class="fc" id="L281">        e.decimal(posX);</span>
+<span class="fc" id="L282">        e.decimal(posY);</span>
+<span class="fc" id="L283">        e.decimal(velX);</span>
+<span class="fc" id="L284">        e.decimal(velY);</span>
+<span class="fc" id="L285">        e.entero(vidaActual, 16);</span>
+<span class="fc" id="L286">        e.entero(framesPateando, 16);</span>
+<span class="fc" id="L287">        e.entero(framesAturdido, 16);</span>
+<span class="fc" id="L288">        e.entero(framesEfecto, 16);</span>
+<span class="fc" id="L289">        e.entero(framesCongelado, 16);</span>
+<span class="fc" id="L290">        e.entero(framesInconsciente, 16);</span>
+<span class="fc" id="L291">        e.entero(framesEmpuje, 16);</span>
+<span class="fc" id="L292">        e.entero(framesQuemado, 16);</span>
+        // La dirección es -1, 0 o 1; se suma uno para que no sea negativa.
+<span class="fc" id="L294">        e.entero(direccionEmpuje + 1, 2);</span>
+<span class="fc" id="L295">        e.decimal(danioQuemaduraPorSegundo);</span>
+<span class="fc" id="L296">        e.logico(electrificado);</span>
+<span class="fc" id="L297">        e.logico(confundido);</span>
+<span class="fc" id="L298">        e.logico(pieUsado);</span>
+<span class="fc" id="L299">    }</span>
+
+    void restaurar(LectorPartida l) {
+<span class="fc" id="L302">        posX = l.decimal();</span>
+<span class="fc" id="L303">        posY = l.decimal();</span>
+<span class="fc" id="L304">        velX = l.decimal();</span>
+<span class="fc" id="L305">        velY = l.decimal();</span>
+<span class="fc" id="L306">        vidaActual = Math.min(getVidaMaxima(), l.entero(16));</span>
+<span class="fc" id="L307">        framesPateando = l.entero(16);</span>
+<span class="fc" id="L308">        framesAturdido = l.entero(16);</span>
+<span class="fc" id="L309">        framesEfecto = l.entero(16);</span>
+<span class="fc" id="L310">        framesCongelado = l.entero(16);</span>
+<span class="fc" id="L311">        framesInconsciente = l.entero(16);</span>
+<span class="fc" id="L312">        framesEmpuje = l.entero(16);</span>
+<span class="fc" id="L313">        framesQuemado = l.entero(16);</span>
+<span class="fc" id="L314">        direccionEmpuje = l.entero(2) - 1;</span>
+<span class="fc" id="L315">        danioQuemaduraPorSegundo = l.decimal();</span>
+<span class="fc" id="L316">        electrificado = l.logico();</span>
+<span class="fc" id="L317">        confundido = l.logico();</span>
+<span class="fc" id="L318">        pieUsado = l.logico();</span>
+<span class="fc" id="L319">    }</span>
+
+    private boolean inmovilizado() {
+<span class="fc bfc" id="L322" title="All 6 branches covered.">        return framesAturdido &gt; 0 || framesCongelado &gt; 0 || framesInconsciente &gt; 0;</span>
+    }
+
+    public boolean aturdido() {
+<span class="fc bfc" id="L326" title="All 2 branches covered.">        return framesAturdido &gt; 0;</span>
+    }
+
+    public boolean isAturdido() {
+<span class="fc" id="L330">        return aturdido();</span>
+    }
+
+    public boolean congelado() {
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        return framesCongelado &gt; 0;</span>
+    }
+
+    public boolean isCongelado() {
+<span class="fc" id="L338">        return congelado();</span>
+    }
+
+    public boolean isPateando() {
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        return framesPateando &gt; 0;</span>
+    }
+
+    /** Cuadros que le quedan a la patada actual (0 si no está pateando). Lo usa la interfaz para animarla. */
+    public int getFramesPateando() {
+<span class="fc" id="L347">        return framesPateando;</span>
+    }
+
+    public boolean isElectrificado() {
+<span class="fc" id="L351">        return electrificado;</span>
+    }
+
+    public boolean isConfundido() {
+<span class="fc" id="L355">        return confundido;</span>
+    }
+
+    public boolean isInconsciente() {
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        return framesInconsciente &gt; 0;</span>
+    }
+
+    public boolean isQuemado() {
+<span class="fc bfc" id="L363" title="All 2 branches covered.">        return framesQuemado &gt; 0;</span>
+    }
+
+    public boolean isEmpujado() {
+<span class="fc bfc" id="L367" title="All 2 branches covered.">        return framesEmpuje &gt; 0;</span>
+    }
+
+    /** Indica si el pie llega a tocar al rival; direccion es 1 si patea a la derecha y -1 si patea a la izquierda. */
+    public boolean alcanzaConPatada(Personaje rival, int direccion) {
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">        if (rival == null) return false;</span>
+
+<span class="fc bfc" id="L374" title="All 2 branches covered.">        double distancia = direccion &gt; 0</span>
+<span class="fc" id="L375">                ? rival.posX - (posX + ANCHO)</span>
+<span class="fc" id="L376">                : posX - (rival.posX + ANCHO);</span>
+<span class="fc bfc" id="L377" title="All 4 branches covered.">        boolean mismaAltura = posY + ALTURA_PIE &lt; rival.posY + ALTO</span>
+                &amp;&amp; posY + ALTO &gt; rival.posY + PARTE_BAJA_RIVAL;
+<span class="pc bpc" id="L379" title="1 of 6 branches missed.">        return distancia &gt;= 0 &amp;&amp; distancia &lt;= ALCANCE_PIE &amp;&amp; mismaAltura;</span>
+    }
+
+    /**
+     * Indica si el pie, mientras patea, alcanza el balón. El pie cubre la mitad delantera del cuerpo
+     * y sale un poco por delante, desde la altura a la que sube su punta hasta el suelo.
+     * Un balón que está detrás o a la altura de la cabeza no lo toca el pie.
+     */
+    public boolean alcanzaConElPie(Balon balon, int direccion) {
+<span class="pc bpc" id="L388" title="1 of 6 branches missed.">        if (!isPateando() || pieUsado || balon == null) return false;</span>
+
+<span class="fc" id="L390">        double centro = posX + ANCHO / 2.0;</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">        double desde = direccion &gt; 0 ? centro : posX - ALCANCE_PIE;</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">        double hasta = direccion &gt; 0 ? posX + ANCHO + ALCANCE_PIE : centro;</span>
+<span class="fc" id="L393">        int radio = balon.getRadio();</span>
+
+<span class="fc bfc" id="L395" title="All 4 branches covered.">        return balon.getPosX() + radio &gt; desde &amp;&amp; balon.getPosX() - radio &lt; hasta</span>
+<span class="fc bfc" id="L396" title="All 4 branches covered.">                &amp;&amp; balon.getPosY() + radio &gt; posY + ALTURA_PUNTA_PIE &amp;&amp; balon.getPosY() - radio &lt; posY + ALTO;</span>
+    }
+
+    public int getVidaActual() {
+<span class="fc" id="L400">        return vidaActual;</span>
+    }
+
+    public String getNombre() {
+<span class="fc" id="L404">        return nombre;</span>
+    }
+
+    public String getPais() {
+<span class="fc" id="L408">        return pais;</span>
+    }
+
+    public double getPosX() {
+<span class="fc" id="L412">        return posX;</span>
+    }
+
+    public double getPosY() {
+<span class="fc" id="L416">        return posY;</span>
+    }
+
+    public double getVelY() {
+<span class="fc" id="L420">        return velY;</span>
+    }
+
+    public int getFuerza() {
+<span class="nc" id="L424">        return kick;</span>
+    }
+
+    public int getVelocidad() {
+<span class="fc" id="L428">        return velocidad;</span>
+    }
+
+    public int getSalto() {
+<span class="fc" id="L432">        return salto;</span>
+    }
+
+    public int getKick() {
+<span class="fc" id="L436">        return kick;</span>
+    }
+
+    public int getSurvival() {
+<span class="fc" id="L440">        return survival;</span>
+    }
+
+    public Poder getPoderEspecial() {
+<span class="fc" id="L444">        return poderEspecial;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

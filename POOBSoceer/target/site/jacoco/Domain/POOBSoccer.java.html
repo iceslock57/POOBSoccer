@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>POOBSoccer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">POOBSoccer.java</span></div><h1>POOBSoccer.java</h1><pre class="source lang-java linenums">package Domain;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Clase principal de la capa de dominio (Fachada).
+ * Administra el estado global del juego usando mapas para inicializar partidos
+ * garantizando la extensibilidad sin cascadas de condicionales.
+ */
+public class POOBSoccer {
+
+    /** Modalidades que se pueden elegir. */
+    public static final String JUGADOR_VS_JUGADOR = &quot;PvsP&quot;, JUGADOR_VS_MAQUINA = &quot;PvsM&quot;;
+
+    // Se escribe en lugar del tipo cuando no hay un partido para guardar.
+    private static final String SIN_PARTIDO = &quot;&quot;;
+
+    // Cancha que se usa cuando no se elige ninguna.
+    private static final int ANCHO_NORMAL = 1000, ALTO_NORMAL = 650;
+
+    // Teclas de cada jugador, en orden: [Izquierda, Derecha, Saltar, Patear, Poder].
+    // Jugador 1 usa S para patear y Q para preparar el poder.
+    // Jugador 2 usa M para patear y N para preparar el poder; estos nombres
+    // deben coincidir con los que envía presentacion.ControladorTeclado.
+<span class="fc" id="L26">    private static final String[] TECLAS_J1 = {&quot;A&quot;, &quot;D&quot;, &quot;W&quot;, &quot;S&quot;, &quot;Q&quot;};</span>
+<span class="fc" id="L27">    private static final String[] TECLAS_J2 = {&quot;LEFT&quot;, &quot;RIGHT&quot;, &quot;UP&quot;, &quot;M&quot;, &quot;N&quot;};</span>
+
+    private Partido partidoActual;
+    private boolean pausa;
+
+    // Con qué opciones se creó el partido actual; se necesitan para poder guardarlo.
+    private String tipoActual, modalidadActual;
+    private int objetivoActual;
+
+    // Progreso de las dos personas; se conserva entre un partido y otro mientras el juego esté abierto.
+    private final PerfilJugador perfil1, perfil2;
+
+    // Interfaces funcionales para el patrón Factory extensible
+    private interface ModalidadFactory {
+        Jugador[] crearJugadores(Personaje p1, Personaje p2, String perfilMaquina);
+    }
+
+    private interface PartidoFactory {
+        Partido crearPartido(Jugador j1, Jugador j2, int objetivo, int ancho, int alto);
+    }
+
+    // Mapas de configuración
+    private Map&lt;String, ModalidadFactory&gt; mapaModalidades;
+    private Map&lt;String, PartidoFactory&gt; mapaTiposPartido;
+
+    public POOBSoccer() {
+<span class="fc" id="L53">        this(new PerfilJugador(&quot;jugador1&quot;, &quot;Jugador 1&quot;), new PerfilJugador(&quot;jugador2&quot;, &quot;Jugador 2&quot;));</span>
+<span class="fc" id="L54">    }</span>
+
+<span class="fc" id="L56">    private POOBSoccer(PerfilJugador perfil1, PerfilJugador perfil2) {</span>
+<span class="fc" id="L57">        this.perfil1 = perfil1;</span>
+<span class="fc" id="L58">        this.perfil2 = perfil2;</span>
+<span class="fc" id="L59">        this.partidoActual = null;</span>
+<span class="fc" id="L60">        this.pausa = false;</span>
+
+<span class="fc" id="L62">        this.mapaModalidades = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L63">        this.mapaTiposPartido = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L65">        configurarFabricas();</span>
+<span class="fc" id="L66">    }</span>
+
+    /**
+     * Registra las estrategias de creación en los mapas.
+     * Si a futuro se agrega una nueva modalidad, solo se añade una línea aquí.
+     */
+    private void configurarFabricas() {
+        // Fábricas de Modalidades
+<span class="fc" id="L74">        mapaModalidades.put(JUGADOR_VS_JUGADOR, (p1, p2, perfil) -&gt; new Jugador[]{</span>
+<span class="fc" id="L75">            new JugadorHumano(p1.getPais(), p1, TECLAS_J1, perfil1),</span>
+<span class="fc" id="L76">            new JugadorHumano(p2.getPais(), p2, TECLAS_J2, perfil2)</span>
+        });
+<span class="fc" id="L78">        mapaModalidades.put(JUGADOR_VS_MAQUINA, (p1, p2, perfil) -&gt; new Jugador[]{</span>
+<span class="fc" id="L79">            new JugadorHumano(p1.getPais(), p1, TECLAS_J1, perfil1),</span>
+<span class="fc" id="L80">            new JugadorMaquina(p2.getPais(), p2, perfil)</span>
+        });
+
+        // Fábricas de Tipos de Partido
+<span class="fc" id="L84">        mapaTiposPartido.put(&quot;Tiempo&quot;, PartidoPorTiempo::new);</span>
+<span class="fc" id="L85">        mapaTiposPartido.put(&quot;Goles&quot;, PartidoPorGoles::new);</span>
+<span class="fc" id="L86">    }</span>
+
+    /**
+     * Inicia un nuevo partido recuperando la configuración de los mapas (O(1)).
+     */
+    public void iniciarPartido(String tipo, String modalidad, Personaje p1, Personaje p2) {
+<span class="fc" id="L92">        iniciarPartido(tipo, modalidad, p1, p2, 5);</span>
+<span class="fc" id="L93">    }</span>
+
+    public void iniciarPartido(String tipo, String modalidad, Personaje p1, Personaje p2, int objetivo) {
+<span class="fc" id="L96">        iniciarPartido(tipo, modalidad, p1, p2, objetivo, ANCHO_NORMAL, ALTO_NORMAL);</span>
+<span class="fc" id="L97">    }</span>
+
+    public void iniciarPartido(String tipo, String modalidad, Personaje p1, Personaje p2, int objetivo, int ancho, int alto) {
+<span class="fc" id="L100">        iniciarPartido(tipo, modalidad, p1, p2, objetivo, ancho, alto, null);</span>
+<span class="fc" id="L101">    }</span>
+
+    /**
+     * Inicia el partido con todas las opciones. El perfil solo se usa cuando se juega contra la máquina.
+     */
+    public void iniciarPartido(String tipo, String modalidad, Personaje p1, Personaje p2, int objetivo,
+                               int ancho, int alto, String perfilMaquina) {
+<span class="fc bfc" id="L108" title="All 4 branches covered.">        if (p1 == null || p2 == null) throw new ExcepcionJuego(&quot;Debe seleccionar ambos personajes&quot;);</span>
+
+<span class="fc" id="L110">        ModalidadFactory modalidadElegida = mapaModalidades.get(modalidad);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (modalidadElegida == null) throw new ExcepcionJuego(&quot;Modalidad no válida: &quot; + modalidad);</span>
+
+<span class="fc" id="L113">        PartidoFactory tipoElegido = mapaTiposPartido.get(tipo);</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (tipoElegido == null) throw new ExcepcionJuego(&quot;Tipo de partido no válido: &quot; + tipo);</span>
+
+<span class="fc" id="L116">        Jugador[] jugadores = modalidadElegida.crearJugadores(p1, p2, perfilMaquina);</span>
+<span class="fc" id="L117">        partidoActual = tipoElegido.crearPartido(jugadores[0], jugadores[1], objetivo, ancho, alto);</span>
+<span class="fc" id="L118">        tipoActual = tipo;</span>
+<span class="fc" id="L119">        modalidadActual = modalidad;</span>
+<span class="fc" id="L120">        objetivoActual = objetivo;</span>
+<span class="fc" id="L121">        pausa = false;</span>
+<span class="fc" id="L122">        RegistroErrores.anotar(&quot;Empieza un partido por &quot; + tipo + &quot; (&quot; + modalidad + &quot;): &quot;</span>
+<span class="fc" id="L123">                + p1.getPais() + &quot; contra &quot; + p2.getPais() + &quot;, objetivo &quot; + objetivo);</span>
+<span class="fc" id="L124">    }</span>
+
+    /** Indica si hay un partido que todavía no ha terminado. */
+    public boolean hayPartidoEnCurso() {
+<span class="fc bfc" id="L128" title="All 4 branches covered.">        return partidoActual != null &amp;&amp; !partidoActual.isTerminado();</span>
+    }
+
+    /**
+     * Guarda los puntos y las estadísticas de las dos personas y, si hay un partido en curso,
+     * también el partido tal como está en este momento.
+     */
+    public void guardar(EscritorPartida e) {
+<span class="fc" id="L136">        perfil1.guardar(e);</span>
+<span class="fc" id="L137">        perfil2.guardar(e);</span>
+
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (hayPartidoEnCurso()) guardarPartido(e);</span>
+<span class="fc" id="L140">        else e.texto(SIN_PARTIDO);</span>
+<span class="fc" id="L141">    }</span>
+
+    private void guardarPartido(EscritorPartida e) {
+<span class="fc" id="L144">        String maquina = partidoActual.getJugador2().getPerfilMaquina();</span>
+<span class="fc" id="L145">        e.texto(tipoActual);</span>
+<span class="fc" id="L146">        e.texto(modalidadActual);</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        e.texto(maquina == null ? &quot;&quot; : maquina);</span>
+<span class="fc" id="L148">        e.entero(objetivoActual, 16);</span>
+<span class="fc" id="L149">        e.entero(partidoActual.getCancha().getAncho(), 16);</span>
+<span class="fc" id="L150">        e.entero(partidoActual.getCancha().getAlto(), 16);</span>
+<span class="fc" id="L151">        guardarPersonaje(e, partidoActual.getJugador1().getPersonaje());</span>
+<span class="fc" id="L152">        guardarPersonaje(e, partidoActual.getJugador2().getPersonaje());</span>
+<span class="fc" id="L153">        partidoActual.guardar(e);</span>
+<span class="fc" id="L154">    }</span>
+
+    /** El país y las estadísticas con las que está jugando. */
+    private static void guardarPersonaje(EscritorPartida e, Personaje personaje) {
+<span class="fc" id="L158">        EstadisticasPersonaje niveles = new EstadisticasPersonaje();</span>
+<span class="fc" id="L159">        niveles.setNivel(PerfilJugador.Estadistica.VIDA, personaje.getSurvival());</span>
+<span class="fc" id="L160">        niveles.setNivel(PerfilJugador.Estadistica.SPEED, personaje.getVelocidad());</span>
+<span class="fc" id="L161">        niveles.setNivel(PerfilJugador.Estadistica.JUMP, personaje.getSalto());</span>
+<span class="fc" id="L162">        niveles.setNivel(PerfilJugador.Estadistica.KICK, personaje.getKick());</span>
+<span class="fc" id="L163">        e.texto(personaje.getPais());</span>
+<span class="fc" id="L164">        niveles.guardar(e);</span>
+<span class="fc" id="L165">    }</span>
+
+    /**
+     * Recupera lo que se guardó. Si traía un partido lo deja en pausa y, si solo traía los puntos y las
+     * estadísticas, queda sin partido. Primero lo arma todo por aparte; si algún dato no sirve,
+     * lo que se estaba jugando queda intacto.
+     */
+    public void restaurar(LectorPartida l) {
+<span class="fc" id="L173">        PerfilJugador leido1 = PerfilJugador.leer(l, perfil1.getIdentificador());</span>
+<span class="fc" id="L174">        PerfilJugador leido2 = PerfilJugador.leer(l, perfil2.getIdentificador());</span>
+
+<span class="fc" id="L176">        POOBSoccer leida = new POOBSoccer(perfil1, perfil2);</span>
+<span class="fc" id="L177">        String tipo = l.texto();</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        if (!tipo.equals(SIN_PARTIDO)) leida.leerPartido(l, tipo);</span>
+<span class="fc" id="L179">        l.terminar();</span>
+
+<span class="fc" id="L181">        perfil1.copiarDe(leido1);</span>
+<span class="fc" id="L182">        perfil2.copiarDe(leido2);</span>
+<span class="fc" id="L183">        partidoActual = leida.partidoActual;</span>
+<span class="fc" id="L184">        tipoActual = leida.tipoActual;</span>
+<span class="fc" id="L185">        modalidadActual = leida.modalidadActual;</span>
+<span class="fc" id="L186">        objetivoActual = leida.objetivoActual;</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        pausa = partidoActual != null;</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">        RegistroErrores.anotar(partidoActual == null</span>
+<span class="fc" id="L189">                ? &quot;Se recuperaron los puntos y las estadísticas guardadas&quot;</span>
+<span class="fc" id="L190">                : &quot;Se recuperó un partido guardado; queda en pausa&quot;);</span>
+<span class="fc" id="L191">    }</span>
+
+    private void leerPartido(LectorPartida l, String tipo) {
+<span class="fc" id="L194">        String modalidad = l.texto(), maquina = l.texto();</span>
+<span class="fc" id="L195">        int objetivo = l.entero(16), ancho = l.entero(16), alto = l.entero(16);</span>
+<span class="fc" id="L196">        Personaje p1 = leerPersonaje(l), p2 = leerPersonaje(l);</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        iniciarPartido(tipo, modalidad, p1, p2, objetivo, ancho, alto, maquina.isEmpty() ? null : maquina);</span>
+<span class="fc" id="L198">        partidoActual.restaurar(l);</span>
+<span class="fc" id="L199">    }</span>
+
+    private static Personaje leerPersonaje(LectorPartida l) {
+<span class="fc" id="L202">        String pais = l.texto();</span>
+<span class="fc" id="L203">        return CatalogoPersonajes.crearConEstadisticas(pais, EstadisticasPersonaje.leer(l));</span>
+    }
+
+    public void pausarJuego() {
+<span class="pc bpc" id="L207" title="1 of 4 branches missed.">        if (this.partidoActual != null &amp;&amp; !this.partidoActual.esFinDePartido()) {</span>
+<span class="fc" id="L208">            this.pausa = true;</span>
+<span class="fc" id="L209">            RegistroErrores.anotar(&quot;El partido se pausa&quot;);</span>
+        }
+<span class="fc" id="L211">    }</span>
+
+    public void reanudarJuego() {
+<span class="fc bfc" id="L214" title="All 2 branches covered.">        if (this.pausa) {</span>
+<span class="fc" id="L215">            this.pausa = false;</span>
+<span class="fc" id="L216">            RegistroErrores.anotar(&quot;El partido continúa&quot;);</span>
+        }
+<span class="fc" id="L218">    }</span>
+
+    public void actualizar() {
+<span class="fc bfc" id="L221" title="All 6 branches covered.">        if (this.partidoActual != null &amp;&amp; !this.pausa &amp;&amp; !this.partidoActual.esFinDePartido()) {</span>
+<span class="fc" id="L222">            this.partidoActual.actualizarEstado();</span>
+        }
+<span class="fc" id="L224">    }</span>
+
+    // Getters con estructura estricta
+
+    public Partido getPartidoActual() {
+<span class="fc" id="L229">        return this.partidoActual;</span>
+    }
+
+    /** Progreso del jugador 1 o del jugador 2. */
+    public PerfilJugador getPerfil(int jugador) {
+<span class="fc bfc" id="L234" title="All 2 branches covered.">        return jugador == 1 ? perfil1 : perfil2;</span>
+    }
+
+    /** Tipo del partido actual: &quot;Tiempo&quot; o &quot;Goles&quot;. */
+    public String getTipoPartido() {
+<span class="fc" id="L239">        return tipoActual;</span>
+    }
+
+    public boolean isPausa() {
+<span class="fc" id="L243">        return this.pausa;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

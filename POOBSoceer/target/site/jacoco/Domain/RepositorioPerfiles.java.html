@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RepositorioPerfiles.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">RepositorioPerfiles.java</span></div><h1>RepositorioPerfiles.java</h1><pre class="source lang-java linenums">package Domain;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Properties;
+
+/**
+ * Lee y escribe los dos perfiles locales de DOPOSoccer.
+ * El archivo queda en la carpeta personal del sistema operativo, separado
+ * del código fuente para que actualizar el juego no borre el progreso.
+ */
+public class RepositorioPerfiles {
+
+    private final Path archivo;
+
+    /** Usa una ubicación estable dentro de la carpeta personal del usuario. */
+    public RepositorioPerfiles() {
+<span class="nc" id="L22">        this(Paths.get(System.getProperty(&quot;user.home&quot;), &quot;.poobsoccer&quot;, &quot;perfiles.properties&quot;));</span>
+<span class="nc" id="L23">    }</span>
+
+    /** Permite indicar otra ruta cuando se necesite probar o respaldar los perfiles. */
+<span class="fc" id="L26">    public RepositorioPerfiles(Path archivo) {</span>
+<span class="fc" id="L27">        this.archivo = archivo;</span>
+<span class="fc" id="L28">    }</span>
+
+    /**
+     * Recupera los perfiles guardados. Cuando es la primera ejecución o todavía
+     * no existe el archivo, crea dos perfiles nuevos con todos los niveles en 1.
+     */
+    public PerfilJugador[] cargarPerfiles() {
+<span class="fc" id="L35">        Properties datos = new Properties();</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        if (Files.isRegularFile(archivo)) {</span>
+<span class="fc" id="L37">            try (InputStream entrada = Files.newInputStream(archivo)) {</span>
+<span class="fc" id="L38">                datos.load(entrada);</span>
+<span class="nc" id="L39">            } catch (IOException ex) {</span>
+<span class="nc" id="L40">                RegistroErrores.registrar(&quot;No fue posible leer los perfiles guardados&quot;, ex);</span>
+<span class="fc" id="L41">            }</span>
+        }
+
+<span class="fc" id="L44">        PerfilJugador primero = cargarPerfil(datos, &quot;jugador1&quot;, &quot;Jugador 1&quot;);</span>
+<span class="fc" id="L45">        PerfilJugador segundo = cargarPerfil(datos, &quot;jugador2&quot;, &quot;Jugador 2&quot;);</span>
+<span class="fc" id="L46">        return new PerfilJugador[]{primero, segundo};</span>
+    }
+
+    /** Lee todos los datos de un jugador y aplica valores seguros si falta alguna propiedad. */
+    private PerfilJugador cargarPerfil(Properties datos, String clave, String nombrePorDefecto) {
+<span class="fc" id="L51">        PerfilJugador perfil = new PerfilJugador(</span>
+                clave,
+<span class="fc" id="L53">                datos.getProperty(clave + &quot;.nombre&quot;, nombrePorDefecto),</span>
+<span class="fc" id="L54">                leerLong(datos, clave + &quot;.puntos&quot;, 0L));</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (String pais : CatalogoPersonajes.paises()) {</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            for (PerfilJugador.Estadistica e : PerfilJugador.Estadistica.values()) {</span>
+<span class="fc" id="L57">                perfil.getEstadisticas(pais).setNivel(e, leerEntero(datos, claveNivel(clave, pais, e), 1));</span>
+            }
+<span class="fc" id="L59">        }</span>
+<span class="fc" id="L60">        return perfil;</span>
+    }
+
+    /** Nombre con el que se guarda el nivel de una estadística de un personaje. */
+    private String claveNivel(String clave, String pais, PerfilJugador.Estadistica estadistica) {
+<span class="fc" id="L65">        return clave + &quot;.&quot; + pais + &quot;.&quot; + estadistica.name().toLowerCase();</span>
+    }
+
+    /** Convierte un dato numérico del archivo sin dejar que un valor inválido cierre el juego. */
+    private int leerEntero(Properties datos, String clave, int valorPorDefecto) {
+        try {
+<span class="fc" id="L71">            return Integer.parseInt(datos.getProperty(clave, String.valueOf(valorPorDefecto)));</span>
+<span class="fc" id="L72">        } catch (NumberFormatException ex) {</span>
+<span class="fc" id="L73">            return valorPorDefecto;</span>
+        }
+    }
+
+    /** Lee el saldo de puntos sin perder precisión cuando las mejoras llegan a precios altos. */
+    private long leerLong(Properties datos, String clave, long valorPorDefecto) {
+        try {
+<span class="fc" id="L80">            long valor = Long.parseLong(datos.getProperty(clave, String.valueOf(valorPorDefecto)));</span>
+<span class="fc" id="L81">            return Math.max(0L, valor);</span>
+<span class="fc" id="L82">        } catch (NumberFormatException ex) {</span>
+<span class="fc" id="L83">            return valorPorDefecto;</span>
+        }
+    }
+
+    /** Guarda ambos perfiles juntos para mantener sincronizado el progreso de los dos jugadores. */
+    public synchronized void guardarPerfiles(PerfilJugador primero, PerfilJugador segundo) throws IOException {
+<span class="fc" id="L89">        Properties datos = new Properties();</span>
+<span class="fc" id="L90">        agregarPerfil(datos, primero);</span>
+<span class="fc" id="L91">        agregarPerfil(datos, segundo);</span>
+
+<span class="fc" id="L93">        Path carpeta = archivo.getParent();</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (carpeta != null) Files.createDirectories(carpeta);</span>
+
+<span class="fc" id="L96">        try (OutputStream salida = Files.newOutputStream(archivo)) {</span>
+<span class="fc" id="L97">            datos.store(salida, &quot;Progreso local de DOPOSoccer. No borrar para conservar los perfiles.&quot;);</span>
+        }
+<span class="fc" id="L99">    }</span>
+
+    /** Escribe todos los campos de un perfil con nombres legibles dentro del archivo. */
+    private void agregarPerfil(Properties datos, PerfilJugador perfil) {
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        if (perfil == null) return;</span>
+<span class="fc" id="L104">        String clave = perfil.getIdentificador();</span>
+<span class="fc" id="L105">        datos.setProperty(clave + &quot;.nombre&quot;, perfil.getNombre());</span>
+<span class="fc" id="L106">        datos.setProperty(clave + &quot;.puntos&quot;, String.valueOf(perfil.getPuntos()));</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        for (String pais : CatalogoPersonajes.paises()) {</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            for (PerfilJugador.Estadistica e : PerfilJugador.Estadistica.values()) {</span>
+<span class="fc" id="L109">                datos.setProperty(claveNivel(clave, pais, e), String.valueOf(perfil.getNivel(pais, e)));</span>
+            }
+<span class="fc" id="L111">        }</span>
+<span class="fc" id="L112">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

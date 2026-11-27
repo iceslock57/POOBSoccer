@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArchivoBits.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">persistencia</a> &gt; <span class="el_source">ArchivoBits.java</span></div><h1>ArchivoBits.java</h1><pre class="source lang-java linenums">package persistencia;
+
+import Domain.POOBSoccer;
+
+/** Formato con el que se exportan y se importan las partidas: todo el contenido empaquetado en bits. */
+public class ArchivoBits extends ArchivoPartida {
+
+    public ArchivoBits() {
+<span class="fc" id="L9">        super(&quot;bin&quot;, &quot;Partida en bits (*.bin)&quot;, &quot;DSBT&quot;);</span>
+<span class="fc" id="L10">    }</span>
+
+    @Override
+    protected byte[] escribir(POOBSoccer juego) {
+<span class="fc" id="L14">        SalidaBits bits = new SalidaBits();</span>
+<span class="fc" id="L15">        juego.guardar(bits);</span>
+<span class="fc" id="L16">        return bits.getContenido();</span>
+    }
+
+    @Override
+    protected void leer(POOBSoccer juego, byte[] contenido) {
+<span class="fc" id="L21">        juego.restaurar(new EntradaBits(contenido));</span>
+<span class="fc" id="L22">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Partido.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">Partido.java</span></div><h1>Partido.java</h1><pre class="source lang-java linenums">package Domain;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/** Motor de partido: actualiza física, colisiones, goles y recompensas. */
+public abstract class Partido {
+
+    private static final int ANCHO = Personaje.ANCHO, ALTO = Personaje.ALTO;
+    private static final int CUADROS_POR_SEGUNDO = 60;
+    private static final double VELOCIDAD_PATADA = 12, ELEVACION_PATADA = -6.5;
+
+    protected Cancha cancha;
+    protected Balon balon;
+    protected Jugador jugador1, jugador2;
+    protected boolean terminado;
+    protected int[] marcador;
+    private boolean premiosAsignados;
+
+    // Balones que acompañan al real cuando se usa la ilusión: se ven iguales, pero no hacen gol ni daño.
+<span class="fc" id="L22">    private final List&lt;Balon&gt; balonesFalsos = new ArrayList&lt;&gt;();</span>
+    private int framesBalonesFalsos;
+    private Poder poderDeLosFalsos;
+    private Personaje confundidoPorLosFalsos;
+
+    public Partido(Jugador j1, Jugador j2) {
+<span class="fc" id="L28">        this(j1, j2, 1000, 650);</span>
+<span class="fc" id="L29">    }</span>
+
+<span class="fc" id="L31">    public Partido(Jugador j1, Jugador j2, int ancho, int alto) {</span>
+<span class="fc bfc" id="L32" title="All 4 branches covered.">        if (j1 == null || j2 == null) throw new IllegalArgumentException(&quot;Los dos jugadores son obligatorios&quot;);</span>
+<span class="fc" id="L33">        jugador1 = j1;</span>
+<span class="fc" id="L34">        jugador2 = j2;</span>
+<span class="fc" id="L35">        marcador = new int[]{0, 0};</span>
+<span class="fc" id="L36">        cancha = new Cancha(ancho, alto);</span>
+<span class="fc" id="L37">        balon = new Balon(ancho / 2, cancha.getSuelo() - 100, 16);</span>
+        // Cada personaje necesita conocer los límites de la cancha para moverse dentro de ella.
+<span class="fc" id="L39">        jugador1.getPersonaje().configurarCancha(ancho, cancha.getSuelo());</span>
+<span class="fc" id="L40">        jugador2.getPersonaje().configurarCancha(ancho, cancha.getSuelo());</span>
+<span class="fc" id="L41">        reiniciarPosiciones();</span>
+<span class="fc" id="L42">    }</span>
+
+    /**
+     * Registra la patada del personaje. La animación se inicia desde JugadorHumano;
+     * el balón se impulsa en gestionarContacto cuando realmente alcanza al jugador.
+     * Si el rival está delante y muy cerca, también recibe el golpe físico de la patada.
+     */
+    public void ejecutarPatada(Jugador atacante) {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (atacante == null) return;</span>
+
+        // Quien está aturdido o inconsciente no llega a patear, así que tampoco puede golpear.
+<span class="fc" id="L53">        Personaje a = atacante.getPersonaje();</span>
+<span class="fc" id="L54">        Personaje d = rivalDe(atacante).getPersonaje();</span>
+
+<span class="fc bfc" id="L56" title="All 6 branches covered.">        if (a.isPateando() &amp;&amp; a.alcanzaConPatada(d, direccionDe(atacante)) &amp;&amp; !d.aturdido()) {</span>
+<span class="fc" id="L57">            d.recibirDanio(10 * a.getMultiplicadorKick());</span>
+        }
+<span class="fc" id="L59">    }</span>
+
+    /**
+     * Actualiza el partido en cada cuadro: física, disparos, colisiones y goles.
+     * La habilidad especial no se aplica al tocar al otro personaje; viaja dentro
+     * del balón y produce su efecto cuando ese balón impacta al rival.
+     */
+    public void actualizarEstado() {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (terminado) return;</span>
+
+        // Primero avanzan los personajes y se acumula poco a poco la energía de sus poderes.
+<span class="fc" id="L70">        jugador1.getPersonaje().actualizarEstado(jugador2.getPersonaje());</span>
+<span class="fc" id="L71">        jugador2.getPersonaje().actualizarEstado(jugador1.getPersonaje());</span>
+<span class="fc" id="L72">        jugador1.avanzarCarga();</span>
+<span class="fc" id="L73">        jugador2.avanzarCarga();</span>
+
+        // Las máquinas deciden su movimiento; las personas ya lo hicieron con el teclado.
+<span class="fc" id="L76">        jugador1.jugarTurno(this);</span>
+<span class="fc" id="L77">        jugador2.jugarTurno(this);</span>
+
+        // Después se mueve el balón y se corrigen sus rebotes contra la cancha.
+<span class="fc" id="L80">        moverBalon(balon);</span>
+<span class="fc" id="L81">        actualizarBalonesFalsos();</span>
+
+        // Un disparo especial puede aplicar el poder si alcanza al personaje contrario.
+<span class="fc" id="L84">        detectarImpactoDisparoEspecial();</span>
+
+        // Las colisiones ordinarias determinan si el balón rebota o sale pateado.
+<span class="fc" id="L87">        gestionarContacto(jugador1);</span>
+<span class="fc" id="L88">        gestionarContacto(jugador2);</span>
+
+<span class="fc" id="L90">        verificarGol();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (esFinDePartido()) {</span>
+<span class="fc" id="L92">            terminado = true;</span>
+<span class="fc" id="L93">            asignarPuntos();</span>
+        }
+<span class="fc" id="L95">    }</span>
+
+    /**
+     * Mueve un balón y deja que el poder ajuste su recorrido si es un tiro especial.
+     * Al chocar con un lado de la cancha el tiro pierde su poder y el balón vuelve a ser normal.
+     */
+    private void moverBalon(Balon b) {
+<span class="fc" id="L102">        double velAntes = b.getVelX();</span>
+<span class="fc" id="L103">        b.aplicarGravedad();</span>
+<span class="fc" id="L104">        b.mover();</span>
+<span class="fc" id="L105">        b.rebotar(cancha);</span>
+
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (!b.isDisparoEspecial()) return;</span>
+
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (velAntes * b.getVelX() &lt; 0) {</span>
+<span class="fc" id="L110">            b.consumirDisparoEspecial();</span>
+<span class="fc" id="L111">            return;</span>
+        }
+<span class="fc" id="L113">        Poder poder = getPoderDelDisparo(b);</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (poder != null) poder.avanzarDisparo(b, cancha.getSuelo());</span>
+<span class="fc" id="L115">    }</span>
+
+    /** Mueve los balones falsos y los retira cuando se acaba su tiempo o termina la confusión del rival. */
+    private void actualizarBalonesFalsos() {
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        if (balonesFalsos.isEmpty()) return;</span>
+
+<span class="fc bfc" id="L121" title="All 4 branches covered.">        boolean terminoLaConfusion = confundidoPorLosFalsos != null &amp;&amp; !confundidoPorLosFalsos.isConfundido();</span>
+<span class="fc bfc" id="L122" title="All 4 branches covered.">        if (--framesBalonesFalsos &lt;= 0 || terminoLaConfusion) {</span>
+<span class="fc" id="L123">            quitarBalonesFalsos();</span>
+<span class="fc" id="L124">            return;</span>
+        }
+
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        for (Balon falso : balonesFalsos) {</span>
+<span class="fc" id="L128">            moverBalon(falso);</span>
+<span class="fc" id="L129">            falso.rebotarEnLosLados(cancha.getAncho());</span>
+<span class="fc" id="L130">            tocarConBalonFalso(falso, jugador1);</span>
+<span class="fc" id="L131">            tocarConBalonFalso(falso, jugador2);</span>
+<span class="fc" id="L132">        }</span>
+<span class="fc" id="L133">    }</span>
+
+    private void quitarBalonesFalsos() {
+<span class="fc" id="L136">        balonesFalsos.clear();</span>
+<span class="fc" id="L137">        framesBalonesFalsos = 0;</span>
+<span class="fc" id="L138">        confundidoPorLosFalsos = null;</span>
+<span class="fc" id="L139">    }</span>
+
+    /** Un balón falso se comporta como uno normal al tocar a alguien, para no delatarse. */
+    private void tocarConBalonFalso(Balon falso, Jugador jugador) {
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        if (esTiroPropio(falso, jugador)) return;</span>
+
+<span class="fc" id="L145">        Personaje personaje = jugador.getPersonaje();</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        if (personaje.alcanzaConElPie(falso, direccionDe(jugador))) impulsarConPatada(falso, jugador);</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        else if (tocaA(falso, personaje)) rebotarEnElCuerpo(falso, jugador);</span>
+<span class="fc" id="L148">    }</span>
+
+    /**
+     * Revisa si el balón toca a uno de los jugadores.
+     * Si el pie lo alcanza mientras patea, sale un disparo: normal cuando no preparó su poder
+     * y especial cuando sí lo preparó. Si solo toca el cuerpo, rebota hacia el lado por donde llegó.
+     */
+    private void gestionarContacto(Jugador jugador) {
+<span class="fc" id="L156">        Personaje personaje = jugador.getPersonaje();</span>
+
+        // Un tiro de poder no puede volver a golpear al mismo jugador que lo lanzó.
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        if (esTiroPropio(balon, jugador)) return;</span>
+
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (personaje.alcanzaConElPie(balon, direccionDe(jugador))) {</span>
+<span class="fc" id="L162">            boolean poderPreparado = jugador.tienePoderPreparado();</span>
+
+<span class="pc bpc" id="L164" title="1 of 4 branches missed.">            if (poderPreparado &amp;&amp; personaje.getPoderEspecial() != null) lanzarPoder(jugador);</span>
+<span class="fc" id="L165">            else impulsarConPatada(balon, jugador);</span>
+
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            if (poderPreparado) jugador.consumirPoder();</span>
+<span class="fc" id="L168">            personaje.consumirPatada();</span>
+<span class="fc bfc" id="L169" title="All 4 branches covered.">        } else if (!balon.isDisparoEspecial() &amp;&amp; tocaA(balon, personaje)) {</span>
+<span class="fc" id="L170">            rebotarEnElCuerpo(balon, jugador);</span>
+        }
+<span class="fc" id="L172">    }</span>
+
+    /** Cada poder decide cómo sale su tiro y si lo acompañan balones falsos. */
+    private void lanzarPoder(Jugador jugador) {
+<span class="fc" id="L176">        Poder poder = jugador.getPersonaje().getPoderEspecial();</span>
+
+<span class="fc" id="L178">        quitarBalonesFalsos();</span>
+<span class="fc" id="L179">        balonesFalsos.addAll(poder.lanzar(balon, direccionDe(jugador), numeroDe(jugador)));</span>
+<span class="fc" id="L180">        framesBalonesFalsos = duracionEnCuadros(poder);</span>
+<span class="fc" id="L181">        poderDeLosFalsos = poder;</span>
+<span class="fc" id="L182">    }</span>
+
+    private void impulsarConPatada(Balon b, Jugador jugador) {
+<span class="fc" id="L185">        b.aplicarFuerza(direccionDe(jugador) * VELOCIDAD_PATADA, ELEVACION_PATADA);</span>
+<span class="fc" id="L186">    }</span>
+
+    /**
+     * Si el balón llega sin una patada, rebota en la cabeza o sale por el costado que tocó:
+     * un balón que está detrás del jugador se va hacia atrás, no hacia adelante.
+     */
+    private void rebotarEnElCuerpo(Balon b, Jugador jugador) {
+<span class="fc" id="L193">        Personaje personaje = jugador.getPersonaje();</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (b.caeSobre(personaje)) b.rebotarEnCabeza(personaje, direccionDe(jugador));</span>
+<span class="fc" id="L195">        else b.rebotarEnElCostado(personaje, direccionDe(jugador));</span>
+<span class="fc" id="L196">    }</span>
+
+    /**
+     * Revisa si el tiro de poder ya llegó al rival. El poder de cada personaje
+     * define el daño y el efecto; esta clase solo coordina el impacto.
+     */
+    private void detectarImpactoDisparoEspecial() {
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        if (!balon.isDisparoEspecial()) return;</span>
+
+<span class="fc" id="L205">        Jugador atacante = duenoDelDisparo(balon);</span>
+<span class="fc" id="L206">        Personaje rival = rivalDe(atacante).getPersonaje();</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        if (!tocaA(balon, rival)) return;</span>
+
+<span class="fc" id="L209">        Poder poder = atacante.getPersonaje().getPoderEspecial();</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        if (poder != null) {</span>
+<span class="fc" id="L211">            poder.aplicarImpacto(rival, atacante.getPersonaje().getMultiplicadorKick(), direccionDe(atacante));</span>
+<span class="fc" id="L212">            mantenerBalonesFalsosMientrasDure(poder, rival);</span>
+        }
+
+        // Al golpear, el balón deja de ser especial para que no afecte varias veces.
+<span class="fc" id="L216">        balon.consumirDisparoEspecial();</span>
+<span class="fc" id="L217">    }</span>
+
+    /** Si el rival quedó confundido, los balones falsos permanecen hasta que se le pase. */
+    private void mantenerBalonesFalsosMientrasDure(Poder poder, Personaje rival) {
+<span class="pc bpc" id="L221" title="1 of 4 branches missed.">        if (balonesFalsos.isEmpty() || !rival.isConfundido()) return;</span>
+
+<span class="fc" id="L223">        confundidoPorLosFalsos = rival;</span>
+<span class="fc" id="L224">        framesBalonesFalsos = duracionEnCuadros(poder) + 1;</span>
+<span class="fc" id="L225">    }</span>
+
+    private static int duracionEnCuadros(Poder poder) {
+<span class="fc" id="L228">        return (int) Math.round(poder.duracionEfecto() * CUADROS_POR_SEGUNDO);</span>
+    }
+
+    private static boolean tocaA(Balon b, Personaje personaje) {
+<span class="fc" id="L232">        int radio = b.getRadio();</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        return b.getPosX() + radio &gt; personaje.getPosX()</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">                &amp;&amp; b.getPosX() - radio &lt; personaje.getPosX() + ANCHO</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">                &amp;&amp; b.getPosY() + radio &gt; personaje.getPosY()</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">                &amp;&amp; b.getPosY() - radio &lt; personaje.getPosY() + ALTO;</span>
+    }
+
+    private boolean esTiroPropio(Balon b, Jugador jugador) {
+<span class="fc bfc" id="L240" title="All 4 branches covered.">        return b.isDisparoEspecial() &amp;&amp; b.getPropietarioDisparo() == numeroDe(jugador);</span>
+    }
+
+    private Jugador duenoDelDisparo(Balon b) {
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        return b.getPropietarioDisparo() == 1 ? jugador1 : jugador2;</span>
+    }
+
+    private Jugador rivalDe(Jugador jugador) {
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        return jugador == jugador1 ? jugador2 : jugador1;</span>
+    }
+
+    private int numeroDe(Jugador jugador) {
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        return jugador == jugador1 ? 1 : 2;</span>
+    }
+
+    private int direccionDe(Jugador jugador) {
+<span class="fc bfc" id="L256" title="All 2 branches covered.">        return jugador == jugador1 ? 1 : -1;</span>
+    }
+
+    /** Poder que lleva un balón en este momento, o null si va sin poder. */
+    public Poder getPoderDelDisparo(Balon b) {
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        return b.isDisparoEspecial() ? duenoDelDisparo(b).getPersonaje().getPoderEspecial() : null;</span>
+    }
+
+    /**
+     * Poder con el que debe verse un balón. Mientras haya balones falsos todos se ven con el mismo,
+     * para que el real no se delate aunque ya haya golpeado a alguien.
+     */
+    public Poder getPoderVisible(Balon b) {
+<span class="fc bfc" id="L269" title="All 2 branches covered.">        return balonesFalsos.isEmpty() ? getPoderDelDisparo(b) : poderDeLosFalsos;</span>
+    }
+
+    /** Balones falsos que hay en la cancha; solo sirven para mostrarlos. */
+    public List&lt;Balon&gt; getBalonesFalsos() {
+<span class="fc" id="L274">        return Collections.unmodifiableList(balonesFalsos);</span>
+    }
+
+    protected void verificarGol() {
+<span class="fc" id="L278">        Arco arco = cancha.esGol(balon);</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">        if (arco == null) return;</span>
+        // Quien recibe el gol gana carga de poder para intentar remontar.
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        if (arco == cancha.getArcoIzquierdo()) {</span>
+<span class="fc" id="L282">            marcador[1]++;</span>
+<span class="fc" id="L283">            jugador2.anotarGol();</span>
+<span class="fc" id="L284">            jugador1.cargarPoder(25);</span>
+        } else {
+<span class="fc" id="L286">            marcador[0]++;</span>
+<span class="fc" id="L287">            jugador1.anotarGol();</span>
+<span class="fc" id="L288">            jugador2.cargarPoder(25);</span>
+        }
+<span class="fc" id="L290">        RegistroErrores.anotar(&quot;Gol. El marcador va &quot; + marcador[0] + &quot; a &quot; + marcador[1]);</span>
+<span class="fc" id="L291">        reiniciarPosiciones();</span>
+<span class="fc" id="L292">    }</span>
+
+    protected void reiniciarPosiciones() {
+<span class="fc" id="L295">        quitarBalonesFalsos();</span>
+<span class="fc" id="L296">        int suelo = cancha.getSuelo();</span>
+<span class="fc" id="L297">        jugador1.getPersonaje().resetearPosicion(cancha.getAncho() * .22, suelo - ALTO);</span>
+<span class="fc" id="L298">        jugador2.getPersonaje().resetearPosicion(cancha.getAncho() * .74, suelo - ALTO);</span>
+<span class="fc" id="L299">        balon.resetearPosicion(cancha.getAncho() / 2, cancha.getAlto() * .32);</span>
+<span class="fc" id="L300">    }</span>
+
+    private void asignarPuntos() {
+        // Los premios se entregan una sola vez, aunque el partido se termine por varias vías.
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">        if (premiosAsignados) return;</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">        if (marcador[0] &gt; marcador[1]) {</span>
+<span class="fc" id="L306">            jugador1.agregarPuntos(100);</span>
+<span class="fc" id="L307">            jugador2.agregarPuntos(25);</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        } else if (marcador[1] &gt; marcador[0]) {</span>
+<span class="fc" id="L309">            jugador2.agregarPuntos(100);</span>
+<span class="fc" id="L310">            jugador1.agregarPuntos(25);</span>
+        } else {
+<span class="fc" id="L312">            jugador1.agregarPuntos(25);</span>
+<span class="fc" id="L313">            jugador2.agregarPuntos(25);</span>
+        }
+<span class="fc" id="L315">        premiosAsignados = true;</span>
+<span class="fc" id="L316">        RegistroErrores.anotar(&quot;Termina el partido &quot; + marcador[0] + &quot; a &quot; + marcador[1]</span>
+<span class="fc" id="L317">                + &quot;. Puntos: &quot; + jugador1.getPuntos() + &quot; y &quot; + jugador2.getPuntos());</span>
+<span class="fc" id="L318">    }</span>
+
+    public void terminar() {
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        if (!terminado) {</span>
+<span class="fc" id="L322">            terminado = true;</span>
+<span class="fc" id="L323">            asignarPuntos();</span>
+        }
+<span class="fc" id="L325">    }</span>
+
+    protected void finalizarSiCorresponde() {
+<span class="pc bpc" id="L328" title="1 of 4 branches missed.">        if (esFinDePartido() &amp;&amp; !terminado) {</span>
+<span class="fc" id="L329">            terminado = true;</span>
+<span class="fc" id="L330">            asignarPuntos();</span>
+        }
+<span class="fc" id="L332">    }</span>
+
+    /** Guarda todo lo que pasa en la cancha en este momento. */
+    void guardar(EscritorPartida e) {
+<span class="fc" id="L336">        e.entero(marcador[0], 16);</span>
+<span class="fc" id="L337">        e.entero(marcador[1], 16);</span>
+<span class="fc" id="L338">        jugador1.guardar(e);</span>
+<span class="fc" id="L339">        jugador2.guardar(e);</span>
+<span class="fc" id="L340">        balon.guardar(e);</span>
+
+<span class="fc" id="L342">        e.entero(balonesFalsos.size(), 4);</span>
+<span class="fc bfc" id="L343" title="All 2 branches covered.">        for (Balon falso : balonesFalsos) falso.guardar(e);</span>
+<span class="fc" id="L344">        e.entero(framesBalonesFalsos, 16);</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">        e.logico(poderDeLosFalsos == jugador2.getPersonaje().getPoderEspecial());</span>
+<span class="pc bpc" id="L346" title="3 of 4 branches missed.">        e.entero(confundidoPorLosFalsos == null ? 0 : confundidoPorLosFalsos == jugador1.getPersonaje() ? 1 : 2, 2);</span>
+<span class="fc" id="L347">    }</span>
+
+    void restaurar(LectorPartida l) {
+<span class="fc" id="L350">        marcador[0] = l.entero(16);</span>
+<span class="fc" id="L351">        marcador[1] = l.entero(16);</span>
+<span class="fc" id="L352">        jugador1.restaurar(l);</span>
+<span class="fc" id="L353">        jugador2.restaurar(l);</span>
+<span class="fc" id="L354">        balon.restaurar(l);</span>
+
+<span class="fc" id="L356">        quitarBalonesFalsos();</span>
+<span class="fc" id="L357">        int cantidad = l.entero(4);</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">        for (int i = 0; i &lt; cantidad; i++) {</span>
+<span class="fc" id="L359">            Balon falso = new Balon(0, 0, balon.getRadio());</span>
+<span class="fc" id="L360">            falso.restaurar(l);</span>
+<span class="fc" id="L361">            balonesFalsos.add(falso);</span>
+        }
+<span class="fc" id="L363">        framesBalonesFalsos = l.entero(16);</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">        poderDeLosFalsos = (l.logico() ? jugador2 : jugador1).getPersonaje().getPoderEspecial();</span>
+<span class="fc" id="L365">        int confundido = l.entero(2);</span>
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">        if (confundido == 1) confundidoPorLosFalsos = jugador1.getPersonaje();</span>
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">        if (confundido == 2) confundidoPorLosFalsos = jugador2.getPersonaje();</span>
+<span class="fc" id="L368">    }</span>
+
+    public Jugador getGanador() {
+<span class="fc bfc" id="L371" title="All 2 branches covered.">        if (!terminado) return null;</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">        if (marcador[0] &gt; marcador[1]) return jugador1;</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">        if (marcador[1] &gt; marcador[0]) return jugador2;</span>
+<span class="fc" id="L374">        return null;</span>
+    }
+
+    public abstract boolean esFinDePartido();
+
+    /** Indica si se está acabando el tiempo. Un partido sin límite de tiempo siempre responde que no. */
+    public boolean estaPorTerminar() {
+<span class="fc" id="L381">        return false;</span>
+    }
+
+<span class="fc" id="L384">    public int[] getMarcador() { return marcador; }</span>
+<span class="fc" id="L385">    public boolean isTerminado() { return terminado; }</span>
+<span class="fc" id="L386">    public Balon getBalon() { return balon; }</span>
+<span class="fc" id="L387">    public Jugador getJugador1() { return jugador1; }</span>
+<span class="fc" id="L388">    public Jugador getJugador2() { return jugador2; }</span>
+<span class="fc" id="L389">    public Cancha getCancha() { return cancha; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

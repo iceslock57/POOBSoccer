@@ -1,0 +1,63 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+poobsoccer,presentacion,EstiloGUI.new JPanel() {...},31,49,2,2,2,9,2,2,0,2
+poobsoccer,presentacion,EstiloGUI.new JPanel() {...},0,90,0,6,0,16,0,5,0,2
+poobsoccer,presentacion,PantallaEstadisticas,1,481,1,11,1,93,1,16,0,11
+poobsoccer,presentacion,PantallaSeleccion,13,742,3,19,3,130,3,31,0,23
+poobsoccer,presentacion,PantallaMaquina,0,145,0,2,0,29,0,5,0,4
+poobsoccer,presentacion,ImagenRecortada,7,307,2,6,2,37,2,8,0,6
+poobsoccer,presentacion,PantallaEstadisticas.new JPanel() {...},0,26,0,0,0,4,0,2,0,2
+poobsoccer,presentacion,PantallaTipos,0,109,0,0,0,26,0,4,0,4
+poobsoccer,presentacion,PantallaInicio,64,73,1,1,16,16,2,4,1,4
+poobsoccer,presentacion,AparienciaPersonaje,0,251,2,12,0,44,2,12,0,7
+poobsoccer,presentacion,PantallaJuego,0,125,0,2,0,31,0,8,0,7
+poobsoccer,presentacion,POOBSoccerGUI.new WindowAdapter() {...},5,6,0,0,2,1,1,1,1,1
+poobsoccer,presentacion,EstiloGUI,2,225,3,7,0,34,3,13,0,11
+poobsoccer,presentacion,PantallaModalidad,0,89,0,0,0,22,0,3,0,3
+poobsoccer,presentacion,PanelCancha,276,1334,16,56,47,196,15,41,2,18
+poobsoccer,presentacion,ControladorTeclado.new AbstractAction() {...},0,13,0,0,0,3,0,2,0,2
+poobsoccer,presentacion,DialogosSwing,70,34,10,0,14,6,10,2,5,2
+poobsoccer,presentacion,PantallaInicio.new ComponentAdapter() {...},0,43,0,0,0,6,0,2,0,2
+poobsoccer,presentacion,POOBSoccerGUI,13,603,5,27,4,116,7,34,2,23
+poobsoccer,presentacion,EfectosPoder,1,2932,1,103,0,354,1,87,0,36
+poobsoccer,presentacion,ControladorTeclado,0,275,0,12,0,45,0,28,0,22
+poobsoccer,presentacion,MenuArchivo,0,93,0,0,0,14,0,7,0,7
+poobsoccer,Domain,PoderRayo,5,14,0,0,2,5,1,3,1,3
+poobsoccer,Domain,Poder,2,23,0,0,1,8,1,5,1,5
+poobsoccer,Domain,Jugador,12,206,1,15,5,51,5,25,4,18
+poobsoccer,Domain,Cancha,5,156,3,15,0,25,3,13,0,7
+poobsoccer,Domain,PartidoPorGoles,0,55,0,8,0,10,0,8,0,4
+poobsoccer,Domain,EstrategiaOfensiva,0,48,0,12,0,9,0,10,0,4
+poobsoccer,Domain,PoderAuraAzul,11,17,0,0,4,6,2,4,2,4
+poobsoccer,Domain,PoderFuego,0,52,0,0,0,13,0,7,0,7
+poobsoccer,Domain,EstrategiaDefensiva,0,48,0,10,0,10,0,9,0,4
+poobsoccer,Domain,JugadorMaquina,0,313,0,24,0,51,0,28,0,16
+poobsoccer,Domain,POOBSoccer,0,570,1,37,0,107,1,42,0,24
+poobsoccer,Domain,PerfilJugador,0,226,1,19,0,47,1,25,0,16
+poobsoccer,Domain,PoderTornado,0,61,0,4,0,14,0,9,0,7
+poobsoccer,Domain,Arco,0,101,0,10,0,19,0,13,0,8
+poobsoccer,Domain,Personaje,5,1011,3,107,1,203,4,109,1,57
+poobsoccer,Domain,Accion,0,33,0,0,0,2,0,1,0,1
+poobsoccer,Domain,EstrategiaExperta,0,83,0,22,0,14,0,16,0,5
+poobsoccer,Domain,JugadorHumano,3,151,1,7,1,24,2,12,1,9
+poobsoccer,Domain,CatalogoMaquinas,0,48,0,2,0,10,0,4,0,3
+poobsoccer,Domain,EstadisticasPersonaje,0,149,0,10,0,21,0,14,0,9
+poobsoccer,Domain,PartidoPorTiempo,0,176,2,26,0,36,2,22,0,10
+poobsoccer,Domain,ExcepcionJuego,0,9,0,0,0,2,0,2,0,2
+poobsoccer,Domain,Partido,20,1022,9,119,0,198,8,95,0,39
+poobsoccer,Domain,RegistroErrores,10,34,0,0,4,11,1,3,1,3
+poobsoccer,Domain,EstrategiaTorpe,0,69,0,10,0,15,0,10,0,5
+poobsoccer,Domain,SituacionPartido,0,428,1,57,0,53,1,49,0,21
+poobsoccer,Domain,PerfilJugador.Estadistica,0,27,0,0,0,2,0,1,0,1
+poobsoccer,Domain,CatalogoPersonajes,0,95,0,4,0,21,0,8,0,6
+poobsoccer,Domain,PoderHielo,0,66,0,4,0,15,0,9,0,7
+poobsoccer,Domain,PoderIlusion,5,135,0,2,2,22,1,8,1,7
+poobsoccer,Domain,RepositorioPerfiles,21,234,2,12,4,44,3,13,1,8
+poobsoccer,Domain,Balon,118,682,21,53,14,112,14,48,1,24
+poobsoccer,Domain,PoderConfusion,15,0,0,0,6,0,3,0,3,0
+poobsoccer,persistencia,ArchivoDat.Entrada,0,72,0,2,0,10,0,8,0,7
+poobsoccer,persistencia,ArchivoDat.Salida,0,66,0,0,0,13,0,11,0,11
+poobsoccer,persistencia,ArchivoDat,4,54,0,0,2,16,0,4,0,4
+poobsoccer,persistencia,ArchivoPartida,0,260,0,16,0,55,0,19,0,11
+poobsoccer,persistencia,EntradaBits,0,128,0,10,0,20,0,14,0,9
+poobsoccer,persistencia,SalidaBits,0,149,0,18,0,28,0,18,0,9
+poobsoccer,persistencia,ArchivoBits,0,23,0,0,0,7,0,3,0,3

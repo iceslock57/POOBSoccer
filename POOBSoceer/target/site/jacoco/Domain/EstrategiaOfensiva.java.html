@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EstrategiaOfensiva.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">EstrategiaOfensiva.java</span></div><h1>EstrategiaOfensiva.java</h1><pre class="source lang-java linenums">package Domain;
+
+import java.util.Set;
+
+/** Su prioridad es anotar: persigue el balón por toda la cancha y patea apenas lo alcanza. */
+<span class="fc" id="L6">public class EstrategiaOfensiva implements EstrategiaMaquina {</span>
+
+    // Cuadros que se adelanta al movimiento del balón.
+    private static final int ANTICIPACION = 8;
+
+    @Override
+    public Set&lt;Accion&gt; decidir(SituacionPartido situacion) {
+<span class="fc" id="L13">        Set&lt;Accion&gt; acciones = situacion.caminarHacia(situacion.lugarParaPatear(ANTICIPACION));</span>
+
+<span class="fc bfc" id="L15" title="All 2 branches covered.">        if (situacion.poderListo()) acciones.add(Accion.PODER);</span>
+        // Solo le pega al rival si el balón está lejos; si no, guarda la patada para el balón.
+<span class="fc bfc" id="L17" title="All 4 branches covered.">        boolean golpearAlRival = situacion.rivalAlAlcance() &amp;&amp; !situacion.balonCerca();</span>
+<span class="fc bfc" id="L18" title="All 4 branches covered.">        if (situacion.balonAlAlcance() || golpearAlRival) acciones.add(Accion.PATEAR);</span>
+<span class="fc bfc" id="L19" title="All 2 branches covered.">        if (situacion.balonPorEncima()) acciones.add(Accion.SALTAR);</span>
+<span class="fc" id="L20">        return acciones;</span>
+    }
+
+    @Override
+    public int cuadrosEntreDecisiones() {
+<span class="fc" id="L25">        return 8;</span>
+    }
+
+    @Override
+    public String descripcion() {
+<span class="fc" id="L30">        return &quot;Su prioridad es anotar&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

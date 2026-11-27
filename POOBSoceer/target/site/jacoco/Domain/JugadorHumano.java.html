@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JugadorHumano.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">poobsoccer</a> &gt; <a href="index.source.html" class="el_package">Domain</a> &gt; <span class="el_source">JugadorHumano.java</span></div><h1>JugadorHumano.java</h1><pre class="source lang-java linenums">package Domain;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Representa a un jugador controlado por una persona mediante el teclado.
+ */
+public class JugadorHumano extends Jugador {
+    
+    private ArrayList&lt;String&gt; teclas;
+    private Map&lt;String, AccionJugador&gt; mapaAcciones;
+
+    /**
+     * Interfaz funcional interna para manejar las acciones de forma extensible.
+     */
+    private interface AccionJugador {
+        void ejecutar(Partido partido);
+    }
+
+    /**
+     * Constructor del Jugador Humano.
+     * 
+     * @param equipo El equipo o país del jugador.
+     * @param personaje El personaje seleccionado.
+     * @param teclasAsignadas Arreglo con las teclas en orden: [Izquierda, Derecha, Saltar, Patear, Poder].
+     */
+    public JugadorHumano(String equipo, Personaje personaje, String[] teclasAsignadas) {
+<span class="fc" id="L31">        this(equipo, personaje, teclasAsignadas, null);</span>
+<span class="fc" id="L32">    }</span>
+
+    /** Vincula el jugador del partido con su perfil para conservar los puntos al finalizar. */
+    public JugadorHumano(String equipo, Personaje personaje, String[] teclasAsignadas, PerfilJugador perfil) {
+<span class="fc" id="L36">        super(equipo, personaje, perfil);</span>
+<span class="fc" id="L37">        this.teclas = new ArrayList&lt;&gt;(Arrays.asList(teclasAsignadas));</span>
+<span class="fc" id="L38">        this.mapaAcciones = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L40">        configurarAcciones();</span>
+<span class="fc" id="L41">    }</span>
+
+    /**
+     * Configura el mapa de acciones para evitar cascadas de condicionales IF.
+     */
+    private void configurarAcciones() {
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (teclas.size() &gt;= 5) {</span>
+            // Mover a la izquierda (-1 en el eje X)
+<span class="fc" id="L49">            mapaAcciones.put(teclas.get(0), partido -&gt; {</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">                Personaje rival = (partido.getJugador1() == this) ? partido.getJugador2().getPersonaje() : partido.getJugador1().getPersonaje();</span>
+<span class="fc" id="L51">                personaje.mover(-1, rival);</span>
+<span class="fc" id="L52">            });</span>
+            
+            // Mover a la derecha (1 en el eje X)
+<span class="fc" id="L55">            mapaAcciones.put(teclas.get(1), partido -&gt; {</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">                Personaje rival = (partido.getJugador1() == this) ? partido.getJugador2().getPersonaje() : partido.getJugador1().getPersonaje();</span>
+<span class="fc" id="L57">                personaje.mover(1, rival);</span>
+<span class="fc" id="L58">            });</span>
+            
+            // Saltar
+<span class="fc" id="L61">            mapaAcciones.put(teclas.get(2), partido -&gt; personaje.saltar());</span>
+            
+            // Patear
+<span class="fc" id="L64">            mapaAcciones.put(teclas.get(3), partido -&gt; { personaje.patear(); partido.ejecutarPatada(this); });</span>
+            
+            // Preparar el poder especial para que viaje con la siguiente patada que alcance el balón.
+<span class="fc" id="L67">            mapaAcciones.put(teclas.get(4), partido -&gt; activarPoder());</span>
+        }
+<span class="fc" id="L69">    }</span>
+
+    @Override
+    public void realizarAccion(String accion, Partido partido) {
+        // Cero cascadas de condicionales: O(1) en búsqueda y ejecución
+<span class="fc" id="L74">        AccionJugador estrategia = mapaAcciones.get(accion);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (estrategia != null) {</span>
+<span class="fc" id="L76">            estrategia.ejecutar(partido);</span>
+        }
+<span class="fc" id="L78">    }</span>
+
+    public ArrayList&lt;String&gt; getTeclas(){
+<span class="nc" id="L81">        return this.teclas;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
